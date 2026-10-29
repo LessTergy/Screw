@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="Screw.Runtime">
+    <type fullname="Screw.Levels.LevelSourceCatalogData" preserve="all" />
+    <type fullname="Screw.Levels.LevelSourceData" preserve="all" />
+    <type fullname="Screw.Levels.PartSourceData" preserve="all" />
+    <type fullname="Screw.Levels.BoltSourceData" preserve="all" />
+    <type fullname="Screw.Levels.BoltPaletteData" preserve="all" />
+  </assembly>
+</linker>

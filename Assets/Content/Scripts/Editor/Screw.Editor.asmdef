@@ -1,0 +1,10 @@
+{
+  "name": "Screw.Editor",
+  "rootNamespace": "Screw.Editor",
+  "references": [
+    "Screw.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ]
+}
