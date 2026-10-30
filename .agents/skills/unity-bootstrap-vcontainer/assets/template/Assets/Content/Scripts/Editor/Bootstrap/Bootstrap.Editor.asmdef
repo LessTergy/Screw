@@ -1,0 +1,6 @@
+{
+    "name": "Bootstrap.Editor",
+    "rootNamespace": "ProjectBootstrap.Editor",
+    "references": ["Bootstrap.Runtime", "VContainer", "Eflatun.SceneReference", "Eflatun.SceneReference.Editor"],
+    "includePlatforms": ["Editor"]
+}

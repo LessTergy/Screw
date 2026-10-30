@@ -1,0 +1,5 @@
+{
+    "name": "Bootstrap.Runtime",
+    "rootNamespace": "ProjectBootstrap",
+    "references": ["VContainer", "Eflatun.SceneReference"]
+}

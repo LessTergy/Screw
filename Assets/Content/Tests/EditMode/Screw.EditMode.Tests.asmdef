@@ -4,6 +4,7 @@
   "references": [
     "Screw.Runtime",
     "Screw.Editor",
+    "VContainer",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

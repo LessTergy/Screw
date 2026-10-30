@@ -1,0 +1,3 @@
+interface:
+  display_name: "Unity Bootstrap Vcontainer"
+  short_description: "Сцены Bootstrap и Gameplay с VContainer через MCP"

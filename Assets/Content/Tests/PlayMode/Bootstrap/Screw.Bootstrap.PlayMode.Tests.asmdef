@@ -1,0 +1,14 @@
+{
+  "name": "Screw.Bootstrap.PlayMode.Tests",
+  "rootNamespace": "Screw.Tests.Bootstrap",
+  "references": [
+    "Screw.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+}

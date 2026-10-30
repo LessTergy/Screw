@@ -1,0 +1,7 @@
+{
+    "name": "Bootstrap.Tests.PlayMode",
+    "rootNamespace": "ProjectBootstrap.Tests.PlayMode",
+    "references": ["Bootstrap.Runtime", "VContainer", "Eflatun.SceneReference"],
+    "autoReferenced": false,
+    "optionalUnityReferences": ["TestAssemblies"]
+}

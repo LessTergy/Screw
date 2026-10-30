@@ -1,0 +1,8 @@
+{
+    "name": "Bootstrap.Tests.EditMode",
+    "rootNamespace": "ProjectBootstrap.Tests.EditMode",
+    "references": ["Bootstrap.Runtime", "Bootstrap.Editor", "VContainer", "Eflatun.SceneReference"],
+    "includePlatforms": ["Editor"],
+    "autoReferenced": false,
+    "optionalUnityReferences": ["TestAssemblies"]
+}

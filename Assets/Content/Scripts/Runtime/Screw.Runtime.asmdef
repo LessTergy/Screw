@@ -1,6 +1,9 @@
 {
   "name": "Screw.Runtime",
   "rootNamespace": "Screw",
-  "references": [],
+  "references": [
+    "VContainer",
+    "Eflatun.SceneReference"
+  ],
   "autoReferenced": true
 }
