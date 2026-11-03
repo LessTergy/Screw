@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Screw.Levels;
@@ -6,50 +5,47 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 namespace Screw.Tests.Levels
 {
     public sealed class LevelColliderTests
     {
         private const string GameplayPath = "Assets/Content/Scenes/Gameplay.unity";
-        private const int TestLayer = 31;
-        private const int TestMask = 1 << TestLayer;
+        private const string BoltPrefabPath = "Assets/Content/3D/Levels/Bolts/Prefabs/Bolt_07.prefab";
+        private Scene _sourceScene;
+        private bool _openedHere;
         private LevelView _view;
-        private PhysicsScene _physics;
+        private BoxCollider _baseHead;
 
         [OneTimeSetUp]
         public void SetUp()
         {
+            Assert.That(EditorApplication.isPlayingOrWillChangePlaymode, Is.False);
             var previous = SceneManager.GetActiveScene();
-            var sourceScene = SceneManager.GetSceneByPath(GameplayPath);
-            var openedHere = !sourceScene.IsValid() || !sourceScene.isLoaded;
+            _sourceScene = SceneManager.GetSceneByPath(GameplayPath);
+            _openedHere = !_sourceScene.IsValid() || !_sourceScene.isLoaded;
             try
             {
-                if (openedHere)
+                if (_openedHere)
                 {
-                    sourceScene = EditorSceneManager.OpenScene(GameplayPath, OpenSceneMode.Additive);
+                    _sourceScene = EditorSceneManager.OpenScene(GameplayPath, OpenSceneMode.Additive);
                 }
 
-                Assert.That(sourceScene.isDirty, Is.False, "Save Gameplay before testing its colliders.");
-                var source = sourceScene.GetRootGameObjects()
+                Assert.That(_sourceScene.isDirty, Is.False, "Save Gameplay before testing its colliders.");
+                _view = _sourceScene.GetRootGameObjects()
                     .SelectMany(root => root.GetComponentsInChildren<GameplayLifetimeScope>()).Single().LevelView;
-                Assert.That(Object.FindObjectsByType<Collider>(FindObjectsSortMode.None)
-                    .Any(collider => collider.gameObject.layer == TestLayer), Is.False, "Fixture layer 31 must be unused.");
-                Assert.That(source.GetComponentsInChildren<Collider>(true)
-                    .All(collider => (Physics.DefaultRaycastLayers & (1 << collider.gameObject.layer)) != 0), Is.True);
-                SceneManager.SetActiveScene(previous);
-                _view = Object.Instantiate(source);
-                _view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-                _view.transform.localScale = Vector3.one;
-                _physics = _view.gameObject.scene.GetPhysicsScene();
+                Assert.That(_view, Is.Not.Null);
                 _view.ValidateBindings();
-                foreach (var collider in _view.GetComponentsInChildren<Collider>(true))
-                {
-                    collider.gameObject.layer = TestLayer;
-                }
-
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoltPrefabPath);
+                Assert.That(prefab, Is.Not.Null);
+                _baseHead = prefab.GetComponent<BoxCollider>();
+                Assert.That(_baseHead, Is.Not.Null, "The shared head collider must be on the bolt prefab root.");
                 Physics.SyncTransforms();
+            }
+            catch
+            {
+                TearDown();
+                throw;
             }
             finally
             {
@@ -57,181 +53,172 @@ namespace Screw.Tests.Levels
                 {
                     SceneManager.SetActiveScene(previous);
                 }
-
-                if (openedHere && sourceScene.IsValid() && sourceScene.isLoaded)
-                {
-                    EditorSceneManager.CloseScene(sourceScene, true);
-                }
             }
         }
 
         [OneTimeTearDown]
         public void TearDown()
         {
-            if (_view != null)
+            if (_openedHere && _sourceScene.IsValid() && _sourceScene.isLoaded)
             {
-                Object.DestroyImmediate(_view.gameObject);
+                Assert.That(_sourceScene.isDirty, Is.False, "Gameplay became dirty during the tests and was left open to preserve changes.");
+                EditorSceneManager.CloseScene(_sourceScene, true);
             }
         }
 
         [Test]
-        public void SavedCollidersUseExactPartMeshesAndSeparateHeadAndShaftSurfaces()
+        public void SharedPrefabUsesOneNonTriggerHeadBoxWithoutRigidbody()
         {
-            var colliders = _view.GetComponentsInChildren<Collider>(true);
-            Assert.That(colliders.Length, Is.EqualTo(22));
-            Assert.That(_view.GetComponentsInChildren<Rigidbody>(true), Is.Empty);
-            foreach (var collider in colliders)
-            {
-                Assert.That(collider, Is.TypeOf<MeshCollider>());
-                Assert.That(collider.enabled && collider.gameObject.activeInHierarchy, Is.True);
-                Assert.That(collider.isTrigger, Is.False);
-                Assert.That(((MeshCollider)collider).convex, Is.False);
-                Assert.That(collider.attachedRigidbody, Is.Null);
-                Assert.That((Physics.DefaultRaycastLayers & (1 << collider.gameObject.layer)) != 0, Is.True);
-            }
+            Assert.That(_baseHead.GetComponentsInChildren<Collider>(true), Has.Length.EqualTo(1));
+            Assert.That(_baseHead.GetComponentsInChildren<Rigidbody>(true), Is.Empty);
+            Assert.That(_baseHead.enabled && _baseHead.gameObject.activeSelf, Is.True);
+            Assert.That(_baseHead.isTrigger, Is.False);
+            Assert.That(_baseHead.center.z - _baseHead.size.z * 0.5f, Is.GreaterThan(0f));
+            Assert.That(_baseHead.size.z, Is.InRange(0.2f, 0.26f));
+            Assert.That(_baseHead.size.x, Is.InRange(0.78f, 0.82f));
+            Assert.That(_baseHead.size.y, Is.InRange(0.78f, 0.82f));
+        }
 
+        [Test]
+        public void SavedGameplayBoltsInheritTheSharedRootColliderWithoutOverrides()
+        {
+            Assert.That(_view.Bolts, Has.Count.EqualTo(9));
+            foreach (var bolt in _view.Bolts)
+            {
+                AssertInheritedHead(bolt.Node);
+            }
+        }
+
+        [Test]
+        public void EveryImportedLevelInheritsTheSameHeadCollider()
+        {
+            Assert.That(_view.ContentCatalog.Levels, Is.Not.Empty);
+            foreach (var level in _view.ContentCatalog.Levels)
+            {
+                var bolts = level.Prefab.transform.Find("Assembly/Bolts");
+                Assert.That(bolts, Is.Not.Null, "Level " + level.Number);
+                Assert.That(bolts.childCount, Is.GreaterThan(0), "Level " + level.Number);
+                foreach (Transform bolt in bolts)
+                {
+                    AssertInheritedHead(bolt);
+                }
+            }
+        }
+
+        [Test]
+        public void SavedGameplayUsesOnlyPrimitiveCollidersWithoutRigidbody()
+        {
             foreach (var part in _view.Parts)
             {
-                Assert.That(part.Node.GetComponentsInChildren<Collider>().Length, Is.EqualTo(1));
-                Assert.That(part.Node.GetComponent<MeshCollider>().sharedMesh,
-                    Is.SameAs(part.Node.GetComponent<MeshFilter>().sharedMesh));
+                var blockers = part.Node.GetComponentsInChildren<Collider>(true);
+                Assert.That(blockers, Is.Not.Empty, "Missing blockers on part " + part.Id);
+                foreach (var blocker in blockers)
+                {
+                    var source = PrefabUtility.GetCorrespondingObjectFromOriginalSource(blocker);
+                    Assert.That(source, Is.Not.Null, "Blocker must come from the common model prefab.");
+                    Assert.That(AssetDatabase.GetAssetPath(source), Is.EqualTo(
+                        "Assets/Content/3D/Levels/Models/modelbatch_lollipop_01/prefab/modelbatch_lollipop_01.prefab"));
+                }
             }
 
-            foreach (var bolt in _view.Bolts)
+            var colliders = _view.LevelRoot.GetComponentsInChildren<Collider>(true);
+            Assert.That(colliders, Is.Not.Empty);
+            Assert.That(_view.LevelRoot.GetComponentsInChildren<Rigidbody>(true), Is.Empty);
+            foreach (var collider in colliders)
             {
-                var visual = bolt.Node.GetComponentInChildren<MeshFilter>();
-                var head = visual.GetComponent<MeshCollider>();
-                var shaft = visual.transform.Find("ShaftCollider").GetComponent<MeshCollider>();
-                Assert.That(bolt.Node.GetComponentsInChildren<Collider>().Length, Is.EqualTo(2));
-                Assert.That(shaft.transform.localPosition, Is.EqualTo(Vector3.zero));
-                Assert.That(shaft.transform.localRotation, Is.EqualTo(Quaternion.identity));
-                Assert.That(shaft.transform.localScale, Is.EqualTo(Vector3.one));
-                Assert.That(Vector3.Dot(visual.transform.up, bolt.Node.forward), Is.GreaterThan(0.9999f));
-                Assert.That(AssetDatabase.GetAssetPath(head.sharedMesh),
-                    Is.EqualTo("Assets/Content/Settings/Levels/Colliders/Screw004_Head.asset"));
-                Assert.That(AssetDatabase.GetAssetPath(shaft.sharedMesh),
-                    Is.EqualTo("Assets/Content/Settings/Levels/Colliders/Screw004_Shaft.asset"));
+                Assert.That(collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider,
+                    Is.True, collider.name);
+                Assert.That(collider.enabled && collider.gameObject.activeInHierarchy, Is.True, collider.name);
+                Assert.That(collider.isTrigger, Is.False, collider.name);
+                Assert.That((Physics.DefaultRaycastLayers & (1 << collider.gameObject.layer)) != 0, Is.True, collider.name);
             }
-
-            var sourceMesh = _view.GetBolt(0).Node.GetComponentInChildren<MeshFilter>().sharedMesh;
-            var sourceVertices = sourceMesh.vertices;
-            var triangles = sourceMesh.triangles;
-            var expectedHead = new List<Vector3>();
-            var expectedShaft = new List<Vector3>();
-            for (var i = 0; i < triangles.Length; i += 3)
-            {
-                var a = sourceVertices[triangles[i]];
-                var b = sourceVertices[triangles[i + 1]];
-                var c = sourceVertices[triangles[i + 2]];
-                var destination = a.y >= 0.02265f && b.y >= 0.02265f && c.y >= 0.02265f ? expectedHead : expectedShaft;
-                destination.Add(a);
-                destination.Add(b);
-                destination.Add(c);
-            }
-
-            Assert.That(expectedHead.Count, Is.EqualTo(512 * 3));
-            Assert.That(expectedShaft.Count, Is.EqualTo(170 * 3));
-            var meshNode = _view.GetBolt(0).Node.GetComponentInChildren<MeshFilter>().transform;
-            AssertTriangles(meshNode.GetComponent<MeshCollider>().sharedMesh, expectedHead);
-            AssertTriangles(meshNode.Find("ShaftCollider").GetComponent<MeshCollider>().sharedMesh, expectedShaft);
         }
 
-        [TestCase(0, -24f)]
-        [TestCase(1, -24f)]
-        [TestCase(2, 24f)]
-        [TestCase(3, -24f)]
-        [TestCase(4, 24f)]
-        [TestCase(5, -24f)]
-        [TestCase(6, 24f)]
-        [TestCase(7, -24f)]
-        [TestCase(8, 24f)]
-        public void FixedFrontAndBackViewsHitVisibleHeadsFirst(int boltId, float cameraZ)
-        {
-            var head = Head(boltId);
-            Assert.That(Cast(new Vector3(0, 2, cameraZ), head.bounds.center).collider, Is.SameAs(head));
-        }
-
-        [TestCase(0, 24f, -1, 2)]
-        [TestCase(1, 24f, 0, -1)]
-        [TestCase(2, -24f, -1, 0)]
-        [TestCase(3, 24f, 1, -1)]
-        [TestCase(4, -24f, -1, 3)]
-        [TestCase(5, 24f, 2, -1)]
-        [TestCase(6, -24f, 2, -1)]
-        [TestCase(7, 24f, 3, -1)]
-        [TestCase(8, -24f, 3, -1)]
-        public void OppositeViewsHitTheActualPartOrOtherBoltBeforeTheHiddenHead(int boltId, float cameraZ, int partId, int otherBoltId)
-        {
-            var expected = partId >= 0 ? _view.GetPart(partId).Node.GetComponent<MeshCollider>() : Head(otherBoltId);
-            Assert.That(Cast(new Vector3(0, 2, cameraZ), Head(boltId).bounds.center).collider, Is.SameAs(expected));
-        }
-
-        [TestCase(18f, -18f, 2, 2)]
-        [TestCase(-12f, -24f, 2, 1)]
-        public void ElevatedAndLowViewsRespectRealOcclusion(float cameraY, float cameraZ, int boltId, int partId)
-        {
-            var hit = Cast(new Vector3(0, cameraY, cameraZ), Head(boltId).bounds.center);
-            Assert.That(hit.collider, Is.SameAs(_view.GetPart(partId).Node.GetComponent<MeshCollider>()));
-            Assert.That(Cast(new Vector3(0, cameraY, cameraZ), Head(0).bounds.center).collider, Is.SameAs(Head(0)));
-        }
-
-        [TestCase(0, -2.9065f, 0.6504f, 1)]
-        [TestCase(1, -1.6243f, 0.7636f, 2)]
-        [TestCase(2, -0.58416f, 2.72688f, 0)]
-        public void EmptySwirlRegionsDoNotBlockTheSurfaceBehindThem(int emptyPartId, float x, float y, int visiblePartId)
-        {
-            var ray = new Ray(new Vector3(x, y, -24), Vector3.forward);
-            var emptyPart = _view.GetPart(emptyPartId).Node.GetComponent<MeshCollider>();
-            Assert.That(emptyPart.bounds.IntersectRay(ray), Is.True);
-            Assert.That(emptyPart.Raycast(ray, out _, 60), Is.False);
-            Assert.That(Cast(ray.origin, ray.origin + ray.direction).collider,
-                Is.SameAs(_view.GetPart(visiblePartId).Node.GetComponent<MeshCollider>()));
-        }
-
-        [Test]
-        public void EmptySpaceInsideTheAssemblyBoundsStillHitsBackground()
-        {
-            var ray = new Ray(new Vector3(-3.568f, -0.8528f, -24), Vector3.forward);
-            Assert.That(_view.GetPart(0).Node.GetComponent<MeshCollider>().bounds.IntersectRay(ray), Is.True);
-            Assert.That(_physics.Raycast(ray.origin, ray.direction, out _, 60,
-                TestMask, QueryTriggerInteraction.Ignore), Is.False);
-        }
-
-        [Test]
-        public void HeadRecessAndShaftRemainSeparateAtTheExportedMeshRotation()
+        [TestCase(0f, 0f, true)]
+        [TestCase(-0.38f, 0f, true)]
+        [TestCase(0.38f, 0f, true)]
+        [TestCase(0f, -0.38f, true)]
+        [TestCase(0f, 0.38f, true)]
+        [TestCase(0.38f, 0.38f, true)]
+        [TestCase(-0.42f, 0f, false)]
+        [TestCase(0.42f, 0f, false)]
+        [TestCase(0f, -0.42f, false)]
+        [TestCase(0f, 0.42f, false)]
+        public void HeadRaysHitCenterAndEdgesAndMissNearbySpace(float x, float y, bool expected)
         {
             foreach (var bolt in _view.Bolts)
             {
-                var visual = bolt.Node.GetComponentInChildren<MeshFilter>().transform;
-                var head = visual.GetComponent<MeshCollider>();
-                var slotRay = new Ray(visual.TransformPoint(new Vector3(0, 0.1f, 0)), -visual.up);
-                var rimRay = new Ray(visual.TransformPoint(new Vector3(0.015f, 0.1f, 0.015f)), -visual.up);
-                Assert.That(head.Raycast(slotRay, out var slot, 10), Is.True);
-                Assert.That(head.Raycast(rimRay, out var rim, 10), Is.True);
-                Assert.That(visual.InverseTransformPoint(slot.point).y, Is.EqualTo(0.03780564f).Within(0.00001f));
-                Assert.That(visual.InverseTransformPoint(rim.point).y, Is.GreaterThan(visual.InverseTransformPoint(slot.point).y + 0.003f));
-                var shaftRay = new Ray(visual.TransformPoint(new Vector3(0.1f, 0.005f, 0)), -visual.right);
-                Assert.That(head.Raycast(shaftRay, out _, 10), Is.False);
-                Assert.That(visual.Find("ShaftCollider").GetComponent<MeshCollider>().Raycast(shaftRay, out _, 10), Is.True);
+                var head = Head(bolt.Node);
+                var didHit = Cast(head, new Vector3(x, y, 1f), new Vector3(x, y, -1f), out var hit);
+                Assert.That(didHit, Is.EqualTo(expected), "Bolt " + bolt.Id);
+                if (expected)
+                {
+                    Assert.That(hit.collider, Is.SameAs(head));
+                    Assert.That(bolt.Node.InverseTransformPoint(hit.point).z, Is.InRange(0.23f, 0.27f));
+                }
             }
         }
 
-        private MeshCollider Head(int boltId)
+        [TestCase(1f)]
+        [TestCase(-1f)]
+        public void HeadBoxHasSurfacesOnBothSidesAlongTheBoltAxis(float side)
         {
-            return _view.GetBolt(boltId).Node.GetComponentInChildren<MeshFilter>().GetComponent<MeshCollider>();
+            foreach (var bolt in _view.Bolts)
+            {
+                var head = Head(bolt.Node);
+                Assert.That(Cast(head, Vector3.forward * side, Vector3.back * side, out var hit),
+                    Is.True, "Bolt " + bolt.Id);
+                Assert.That(Vector3.Dot(hit.normal, bolt.Node.forward * side), Is.GreaterThan(0.99f));
+            }
         }
 
-        private RaycastHit Cast(Vector3 origin, Vector3 target)
+        [TestCase(-0.5f, false)]
+        [TestCase(-0.2f, false)]
+        [TestCase(0f, false)]
+        [TestCase(0.13f, true)]
+        [TestCase(0.3f, false)]
+        public void SideRaysHitTheHeadButNotTheShaft(float z, bool expected)
         {
-            Assert.That(_physics.Raycast(origin, (target - origin).normalized, out var hit, 60,
-                TestMask, QueryTriggerInteraction.Ignore), Is.True);
-            return hit;
+            foreach (var bolt in _view.Bolts)
+            {
+                Assert.That(Cast(Head(bolt.Node), new Vector3(1f, 0f, z), new Vector3(-1f, 0f, z), out _),
+                    Is.EqualTo(expected), "Bolt " + bolt.Id);
+            }
         }
 
-        private static void AssertTriangles(Mesh actual, List<Vector3> expected)
+        private void AssertInheritedHead(Transform bolt)
         {
-            var vertices = actual.vertices;
-            CollectionAssert.AreEqual(expected, actual.triangles.Select(index => vertices[index]).ToArray());
+            var head = Head(bolt);
+            Assert.That(bolt.GetComponentsInChildren<Collider>(true), Has.Length.EqualTo(1), bolt.name);
+            Assert.That(bolt.GetComponentsInChildren<Rigidbody>(true), Is.Empty, bolt.name);
+            Assert.That(PrefabUtility.GetCorrespondingObjectFromOriginalSource(head), Is.SameAs(_baseHead), bolt.name);
+            Assert.That(head.center, Is.EqualTo(_baseHead.center), bolt.name);
+            Assert.That(head.size, Is.EqualTo(_baseHead.size), bolt.name);
+            Assert.That(head.enabled, Is.EqualTo(_baseHead.enabled), bolt.name);
+            Assert.That(head.isTrigger, Is.EqualTo(_baseHead.isTrigger), bolt.name);
+            using (var serialized = new SerializedObject(head))
+            {
+                foreach (var propertyName in new[] { "m_Center", "m_Size", "m_Enabled", "m_IsTrigger" })
+                {
+                    var property = serialized.FindProperty(propertyName);
+                    Assert.That(property, Is.Not.Null, propertyName);
+                    Assert.That(property.prefabOverride, Is.False, bolt.name + ": " + propertyName);
+                }
+            }
+        }
+
+        private static BoxCollider Head(Transform bolt)
+        {
+            var head = bolt.GetComponent<BoxCollider>();
+            Assert.That(head, Is.Not.Null, "Missing root head collider: " + bolt.name);
+            return head;
+        }
+
+        private static bool Cast(BoxCollider head, Vector3 from, Vector3 to, out RaycastHit hit)
+        {
+            var origin = head.transform.TransformPoint(from);
+            var direction = head.transform.TransformPoint(to) - origin;
+            return head.Raycast(new Ray(origin, direction.normalized), out hit, direction.magnitude);
         }
     }
 }

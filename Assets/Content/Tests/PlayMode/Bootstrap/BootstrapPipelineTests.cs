@@ -121,11 +121,55 @@ namespace Screw.Tests.Bootstrap
             Assert.That(view.ValidateBindings().Number, Is.EqualTo(1));
             Assert.That(view.Parts.Count, Is.EqualTo(4));
             Assert.That(view.Bolts.Count, Is.EqualTo(9));
+            Assert.That(gameplay.Container.Resolve<Camera>(), Is.SameAs(gameplay.SceneCamera));
+            var selection = gameplay.Container.Resolve<BoltSelection>();
+            Assert.That(gameplay.Container.Resolve<IReadOnlyList<IStartable>>().OfType<BoltSelection>().Single(),
+                Is.SameAs(selection));
+            gameplay.GameplaySession.enabled = false;
+            try
+            {
+                AssertSelectionViews(selection, view, gameplay.SceneCamera);
+            }
+            finally
+            {
+                gameplay.GameplaySession.enabled = true;
+            }
             Assert.That(gameplay.gameObject.scene, Is.EqualTo(SceneManager.GetActiveScene()));
             Assert.That(SceneManager.GetActiveScene().path, Is.EqualTo(GameplayPath));
             Assert.That(Object.FindObjectsByType<AppLifetimeScope>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
             Assert.That(Object.FindObjectsByType<SceneNavigator>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
             Assert.That(Object.FindObjectsByType<GameplayLifetimeScope>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
+        }
+
+        private static void AssertSelectionViews(BoltSelection selection, LevelView view, Camera camera)
+        {
+            var position = camera.transform.position;
+            var rotation = camera.transform.rotation;
+            var frontIds = new[] { 0, 1, 3, 5, 7 };
+            try
+            {
+                foreach (var bolt in view.Bolts)
+                {
+                    var target = bolt.Node.GetComponent<Collider>().bounds.center;
+                    var cameraZ = frontIds.Contains(bolt.Id) ? -24f : 24f;
+                    camera.transform.position = view.LevelRoot.TransformPoint(new Vector3(0f, 2f, cameraZ));
+                    camera.transform.LookAt(target, view.LevelRoot.up);
+                    Assert.That(selection.TrySelect(camera.WorldToScreenPoint(target), out var selected),
+                        Is.True, "Visible head " + bolt.Id);
+                    Assert.That(selected.Id, Is.EqualTo(bolt.Id));
+
+                    camera.transform.position = view.LevelRoot.TransformPoint(new Vector3(0f, 2f, -cameraZ));
+                    camera.transform.LookAt(target, view.LevelRoot.up);
+                    if (selection.TrySelect(camera.WorldToScreenPoint(target), out var opposite))
+                    {
+                        Assert.That(opposite.Id, Is.Not.EqualTo(bolt.Id), "Hidden head " + bolt.Id);
+                    }
+                }
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+            }
         }
 
         private static IEnumerator WaitFor(Func<bool> ready)

@@ -3,6 +3,7 @@
   "rootNamespace": "Screw.Tests",
   "references": [
     "Screw.Runtime",
+    "VContainer",
     "UnityEngine.TestRunner"
   ],
   "includePlatforms": [],

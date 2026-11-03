@@ -96,6 +96,10 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(view.Bolts.Count, Is.EqualTo(9));
                     Assert.That(PrefabUtility.GetCorrespondingObjectFromSource(view.LevelRoot.gameObject),
                         Is.SameAs(view.ContentCatalog.GetLevel(1).Prefab));
+                    var orbit = gameplay.SceneCamera.GetComponent<OrbitCamera>();
+                    Assert.That(orbit, Is.Not.Null);
+                    Assert.That(orbit.LevelRoot, Is.SameAs(view.LevelRoot));
+                    Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<Camera>(true)).Count(), Is.EqualTo(1));
                 }
             }
             finally

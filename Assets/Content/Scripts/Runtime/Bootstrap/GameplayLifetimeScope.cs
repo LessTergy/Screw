@@ -1,3 +1,5 @@
+using System.IO;
+using Screw.Gameplay;
 using Screw.Levels;
 using UnityEngine;
 using VContainer;
@@ -13,6 +15,9 @@ namespace Screw
         [SerializeField] private Light _sceneLight;
         [SerializeField] private Transform _ground;
         [SerializeField] private LevelView _levelView;
+        [SerializeField] private LevelGameplayDefinition _gameplayDefinition;
+        [SerializeField] private BoltTurnOperations _turnOperations;
+        [SerializeField] private GameplaySession _gameplaySession;
 
         public Transform LevelAnchor
         {
@@ -39,9 +44,35 @@ namespace Screw
             get { return _levelView; }
         }
 
+        public GameplaySession GameplaySession
+        {
+            get { return _gameplaySession; }
+        }
+
+        public LevelGameplayDefinition GameplayDefinition
+        {
+            get { return _gameplayDefinition; }
+        }
+
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterComponent(_levelView);
+            builder.RegisterComponent(_sceneCamera);
+            builder.RegisterEntryPoint<BoltSelection>(Lifetime.Scoped).AsSelf();
+            builder.RegisterInstance(_gameplayDefinition);
+            builder.Register(_ =>
+            {
+                if (_gameplayDefinition.ContentCatalog != _levelView.ContentCatalog
+                    || _gameplayDefinition.Gameplay.LevelNumber != _levelView.LevelNumber)
+                {
+                    throw new InvalidDataException("Gameplay definition does not match the scene level and catalog.");
+                }
+
+                return new LevelAttempt(_gameplayDefinition.ReadSource(), _gameplayDefinition.Gameplay);
+            }, Lifetime.Scoped);
+            builder.RegisterComponent(_turnOperations).As<ITurnOperations>().AsSelf();
+            builder.Register<TurnCoordinator>(Lifetime.Scoped);
+            builder.RegisterComponent(_gameplaySession);
         }
     }
 }

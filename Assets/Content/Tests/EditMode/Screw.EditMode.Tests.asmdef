@@ -5,6 +5,7 @@
     "Screw.Runtime",
     "Screw.Editor",
     "VContainer",
+    "UniTask",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

@@ -3,7 +3,10 @@
   "rootNamespace": "Screw",
   "references": [
     "VContainer",
-    "Eflatun.SceneReference"
+    "Eflatun.SceneReference",
+    "UnityEngine.UI",
+    "UniTask",
+    "Unity.TextMeshPro"
   ],
   "autoReferenced": true
 }

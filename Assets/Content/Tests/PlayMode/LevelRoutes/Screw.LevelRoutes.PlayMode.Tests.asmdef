@@ -1,0 +1,10 @@
+{
+  "name": "Screw.LevelRoutes.PlayMode.Tests",
+  "rootNamespace": "Screw.Tests.Levels",
+  "references": ["Screw.Runtime", "Screw.Editor", "VContainer", "UnityEngine.TestRunner"],
+  "includePlatforms": [],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll", "Newtonsoft.Json.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS", "UNITY_EDITOR"]
+}
