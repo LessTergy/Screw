@@ -114,6 +114,13 @@ namespace Screw.Tests.Bootstrap
             Assert.That(gameplay.Parent, Is.SameAs(app));
             Assert.That(gameplay.Container.Resolve<SceneNavigator>(), Is.SameAs(navigator));
             Assert.That(gameplay.Container.Resolve<LevelContentCatalog>(), Is.SameAs(app.ContentCatalog));
+            var view = gameplay.Container.Resolve<LevelView>();
+            Assert.That(view, Is.SameAs(gameplay.LevelView));
+            Assert.That(view.ContentCatalog, Is.SameAs(app.Container.Resolve<LevelContentCatalog>()));
+            Assert.That(view.transform.parent, Is.SameAs(gameplay.LevelAnchor));
+            Assert.That(view.ValidateBindings().Number, Is.EqualTo(1));
+            Assert.That(view.Parts.Count, Is.EqualTo(4));
+            Assert.That(view.Bolts.Count, Is.EqualTo(9));
             Assert.That(gameplay.gameObject.scene, Is.EqualTo(SceneManager.GetActiveScene()));
             Assert.That(SceneManager.GetActiveScene().path, Is.EqualTo(GameplayPath));
             Assert.That(Object.FindObjectsByType<AppLifetimeScope>(FindObjectsSortMode.None).Length, Is.EqualTo(1));

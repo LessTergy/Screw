@@ -86,6 +86,16 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(gameplay.Ground.gameObject.scene, Is.EqualTo(scene));
                     Assert.That(gameplay.Ground, Is.Not.SameAs(gameplay.LevelAnchor));
                     Assert.That(gameplay.Ground.IsChildOf(gameplay.LevelAnchor), Is.False);
+                    var view = gameplay.LevelView;
+                    Assert.That(view, Is.Not.Null);
+                    Assert.That(view.transform.parent, Is.SameAs(gameplay.LevelAnchor));
+                    var settings = AssetDatabase.LoadAssetAtPath<VContainerSettings>("Assets/Content/Settings/VContainerSettings.asset");
+                    Assert.That(view.ContentCatalog, Is.SameAs(((AppLifetimeScope)settings.RootLifetimeScope).ContentCatalog));
+                    Assert.That(view.ValidateBindings().Number, Is.EqualTo(1));
+                    Assert.That(view.Parts.Count, Is.EqualTo(4));
+                    Assert.That(view.Bolts.Count, Is.EqualTo(9));
+                    Assert.That(PrefabUtility.GetCorrespondingObjectFromSource(view.LevelRoot.gameObject),
+                        Is.SameAs(view.ContentCatalog.GetLevel(1).Prefab));
                 }
             }
             finally

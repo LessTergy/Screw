@@ -43,7 +43,7 @@ Runtime не выключает Auto Run, не вызывает Build/Initialize
 
 1. В Test Runner → EditMode выполнить `Screw.Tests.Bootstrap.BootstrapScopeTests`: ссылки root/navigator/catalog, Preloaded Assets и порядок сцен сборки, отсутствие scope в Bootstrap, единственный автоматический Gameplay scope и сохранённые сценовые ссылки. Тесты не изменяют Player Settings и не вызывают проектные сетаперы.
 2. В Test Runner → PlayMode выполнить `Screw.Tests.Bootstrap.BootstrapPipelineTests`: зарегистрированный IStartable, Single-переход, двойной запрос, автоматический parent, общий каталог/навигатор, restart, уничтожение старого scope и test-only IDisposable, прямой Gameplay без повторной загрузки. Тест заменяет сцены; перед запуском сохранить работу.
-3. Открыть только Bootstrap и запустить Play. Ожидаются переход в Gameplay, выгрузка Bootstrap, ровно один App и один SceneNavigator в DontDestroyOnLoad, один GameplayLifetimeScope с Parent = App. Уровень P3.1 пока не создаётся.
+3. Открыть только Bootstrap и запустить Play. Ожидаются переход в Gameplay, выгрузка Bootstrap, ровно один App и один SceneNavigator в DontDestroyOnLoad, один GameplayLifetimeScope с Parent = App. Привязки настоящего уровня проверяются отдельно в P3.1.
 4. Остановить Play, открыть только Gameplay и запустить напрямую. Gameplay автоматически получает контейнер и App; ошибок «Gameplay requires Bootstrap» и перенаправления нет.
 5. Несколько раз выполнить Stop/Play: нет дублей и новых ошибок. Использовать обычные Enter Play Mode settings; если в проекте отключён Domain Reload, повторить с реальными настройками проекта.
 6. Проверить development build: первой открывается Bootstrap и автоматически переходит в Gameplay; нет Editor API и ошибок карт Eflatun. Editor-тесты не подтверждают сборку.
