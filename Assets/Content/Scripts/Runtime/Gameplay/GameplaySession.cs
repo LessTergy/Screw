@@ -1,15 +1,23 @@
 using System;
 using Cysharp.Threading.Tasks;
+using Screw.Bootstrap;
 using Screw.Levels;
 using UnityEngine;
+using UnityEngine.UI;
 using VContainer;
 
 namespace Screw.Gameplay
 {
     public sealed class GameplaySession : MonoBehaviour
     {
+        [SerializeField] private Button _restartButton;
+        [SerializeField] private GameObject _resultPanel;
+        [SerializeField] private Text _resultLabel;
+        [SerializeField] private Button _retryButton;
+
         private TurnCoordinator _coordinator;
         private BoltSelection _selection;
+        private SceneNavigator _navigator;
         private bool _started;
 
         public TurnCoordinator Coordinator
@@ -23,23 +31,25 @@ namespace Screw.Gameplay
         }
 
         [Inject]
-        public void Construct(TurnCoordinator coordinator, BoltSelection selection)
+        public void Construct(TurnCoordinator coordinator, BoltSelection selection, SceneNavigator navigator)
         {
             _coordinator = coordinator;
             _selection = selection;
+            _navigator = navigator;
         }
 
         private void Start()
         {
             _started = true;
-            _selection.Selected += OnSelected;
+            _resultPanel.SetActive(false);
+            Subscribe();
         }
 
         private void OnEnable()
         {
             if (_started)
             {
-                _selection.Selected += OnSelected;
+                Subscribe();
             }
         }
 
@@ -48,12 +58,43 @@ namespace Screw.Gameplay
             if (_started)
             {
                 _selection.Selected -= OnSelected;
+                _restartButton.onClick.RemoveListener(Restart);
+                _retryButton.onClick.RemoveListener(Restart);
             }
+        }
+
+        public async UniTask PlayAsync(int boltId)
+        {
+            await _coordinator.PlayAsync(boltId);
+            if (Attempt.Status == AttemptStatus.Active)
+            {
+                return;
+            }
+
+            _resultLabel.text = Attempt.Status == AttemptStatus.Won ? "Победа!" : "Нет места";
+            _resultPanel.SetActive(true);
+            _restartButton.gameObject.SetActive(false);
+        }
+
+        private void Subscribe()
+        {
+            _selection.Selected += OnSelected;
+            _restartButton.onClick.AddListener(Restart);
+            _retryButton.onClick.AddListener(Restart);
+        }
+
+        private void Restart()
+        {
+            _restartButton.interactable = false;
+            _retryButton.interactable = false;
+            enabled = false;
+            _coordinator.Dispose();
+            _navigator.RestartGameplay();
         }
 
         private void OnSelected(LevelBoltBinding bolt)
         {
-            _coordinator.PlayAsync(bolt.Id).Forget(exception =>
+            PlayAsync(bolt.Id).Forget(exception =>
             {
                 if (!(exception is OperationCanceledException))
                 {

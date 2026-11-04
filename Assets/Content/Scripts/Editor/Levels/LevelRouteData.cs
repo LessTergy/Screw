@@ -47,7 +47,7 @@ namespace Screw.Editor.Levels
         public void Validate(LevelSourceData source)
         {
             LevelDataValidator.ValidateLevel(source);
-            Require(SchemaVersion == 1 && LevelNumber == source.Number, "Route schema or level does not match.");
+            Require(SchemaVersion == 2 && LevelNumber == source.Number, "Route schema or level does not match.");
             Require(Camera != null && Finite(Camera.FieldOfViewDegrees)
                 && Camera.FieldOfViewDegrees >= 1f && Camera.FieldOfViewDegrees < 179f
                 && Finite(Camera.Aspect) && Camera.Aspect > 0f, "Invalid route projection.");
@@ -59,7 +59,7 @@ namespace Screw.Editor.Levels
                 "Unknown, repeated or missing route bolt.");
             foreach (var step in Steps)
             {
-                Require(VectorValid(step.CameraPosition, 3) && VectorValid(step.CameraEulerDegrees, 3), "Invalid route pose.");
+                Require(VectorValid(step.LevelEulerDegrees, 3), "Invalid level rotation.");
                 Require(VectorValid(step.ViewportPoint, 2) && step.ViewportPoint.All(value => value >= 0f && value <= 1f),
                     "Invalid route viewport point.");
             }
@@ -98,8 +98,7 @@ namespace Screw.Editor.Levels
     public sealed class RouteStepData
     {
         [JsonProperty("boltId", Required = Required.Always)] public int BoltId;
-        [JsonProperty("cameraPosition", Required = Required.Always)] public float[] CameraPosition;
-        [JsonProperty("cameraEulerDegrees", Required = Required.Always)] public float[] CameraEulerDegrees;
+        [JsonProperty("levelEulerDegrees", Required = Required.Always)] public float[] LevelEulerDegrees;
         [JsonProperty("viewportPoint", Required = Required.Always)] public float[] ViewportPoint;
     }
 }

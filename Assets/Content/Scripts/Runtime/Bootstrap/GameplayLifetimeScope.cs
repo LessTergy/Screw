@@ -18,6 +18,7 @@ namespace Screw
         [SerializeField] private LevelGameplayDefinition _gameplayDefinition;
         [SerializeField] private BoltTurnOperations _turnOperations;
         [SerializeField] private GameplaySession _gameplaySession;
+        [SerializeField, Min(0.01f)] private float _partRemovalMargin = 1f;
 
         public Transform LevelAnchor
         {
@@ -70,6 +71,9 @@ namespace Screw
 
                 return new LevelAttempt(_gameplayDefinition.ReadSource(), _gameplayDefinition.Gameplay);
             }, Lifetime.Scoped);
+            builder.Register<LevelPartPhysics>(Lifetime.Scoped)
+                .WithParameter("ground", _ground)
+                .WithParameter("removalMargin", _partRemovalMargin);
             builder.RegisterComponent(_turnOperations).As<ITurnOperations>().AsSelf();
             builder.Register<TurnCoordinator>(Lifetime.Scoped);
             builder.RegisterComponent(_gameplaySession);

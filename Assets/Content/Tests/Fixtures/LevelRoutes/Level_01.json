@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "levelNumber": 1,
   "camera": {
     "fieldOfViewDegrees": 60.0,
@@ -8,155 +8,110 @@
   "steps": [
     {
       "boltId": 0,
-      "cameraPosition": [
-        0.000150680542,
-        -0.313097954,
-        -29.8014412
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
       "viewportPoint": [
         0.4043855,
         0.6611238
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     {
       "boltId": 1,
-      "cameraPosition": [
-        0.000150680542,
-        -0.313097954,
-        -29.8014412
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
       "viewportPoint": [
         0.3184506,
         0.579852641
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     {
       "boltId": 2,
-      "cameraPosition": [
-        0.000153299887,
-        -0.313097954,
-        30.1222038
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        180.0,
-        0.0
-      ],
       "viewportPoint": [
         0.5924013,
         0.6644131
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        180.0,
+        0.0
       ]
     },
     {
       "boltId": 3,
-      "cameraPosition": [
-        0.000150680542,
-        -0.313097954,
-        -29.8014412
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
       "viewportPoint": [
         0.4588893,
         0.4698601
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     {
       "boltId": 4,
-      "cameraPosition": [
-        0.000153299887,
-        -0.313097954,
-        30.1222038
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        180.0,
-        0.0
-      ],
       "viewportPoint": [
         0.5385646,
         0.463084072
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        180.0,
+        0.0
       ]
     },
     {
       "boltId": 5,
-      "cameraPosition": [
-        0.000150680542,
-        -0.313097954,
-        -29.8014412
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
       "viewportPoint": [
         0.6800879,
         0.5834947
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     {
       "boltId": 6,
-      "cameraPosition": [
-        0.000153299887,
-        -0.313097954,
-        30.1222038
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        180.0,
-        0.0
-      ],
       "viewportPoint": [
         0.306568325,
         0.5651096
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        180.0,
+        0.0
       ]
     },
     {
       "boltId": 7,
-      "cameraPosition": [
-        0.000150680542,
-        -0.313097954,
-        -29.8014412
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        0.0,
-        0.0
-      ],
       "viewportPoint": [
         0.500047743,
         0.390041083
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
       ]
     },
     {
       "boltId": 8,
-      "cameraPosition": [
-        0.000153299887,
-        -0.313097954,
-        30.1222038
-      ],
-      "cameraEulerDegrees": [
-        0.0,
-        180.0,
-        0.0
-      ],
       "viewportPoint": [
         0.500061333,
         0.350809038
+      ],
+      "levelEulerDegrees": [
+        0.0,
+        180.0,
+        0.0
       ]
     }
   ]

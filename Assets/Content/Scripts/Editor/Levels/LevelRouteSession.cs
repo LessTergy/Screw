@@ -62,16 +62,13 @@ namespace Screw.Editor.Levels
 
             _prepared = false;
             var step = _route.Steps[StepIndex];
-            var rotation = _view.LevelRoot.rotation * Quaternion.Euler(LevelRouteData.Vector(step.CameraEulerDegrees));
-            var angles = rotation.eulerAngles;
-            _input.Rotate(new Vector2(angles.y - _input.Yaw, angles.x - _input.Pitch));
-            var position = _view.LevelRoot.TransformPoint(LevelRouteData.Vector(step.CameraPosition));
-            if (Vector3.Distance(position, _camera.transform.position) > 0.01f
-                || Quaternion.Angle(rotation, _camera.transform.rotation) > 0.1f)
+            var angles = LevelRouteData.Vector(step.LevelEulerDegrees);
+            if (Mathf.Abs(Mathf.DeltaAngle(angles.z, 0f)) > 0.1f)
             {
-                throw new InvalidDataException("Route pose is not reachable by the configured orbit at step " + StepIndex + ".");
+                throw new InvalidDataException("Level roll is not reachable by the configured orbit at step " + StepIndex + ".");
             }
 
+            _input.Rotate(new Vector2(angles.y - _input.Yaw, angles.x - _input.Pitch));
             _prepared = true;
             Message = "Step " + (StepIndex + 1) + ": tap bolt " + step.BoltId + ".";
         }

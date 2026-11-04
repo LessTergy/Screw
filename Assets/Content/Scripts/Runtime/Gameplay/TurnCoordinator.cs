@@ -34,14 +34,21 @@ namespace Screw.Gameplay
             EnsureCurrent(attempt, token);
             attempt.ConfirmDetachment(turn);
 
-            await _operations.ArriveAsync(turn, token).AttachExternalCancellation(token);
-            EnsureCurrent(attempt, token);
-            attempt.ConfirmArrival(turn);
-
-            await _operations.FinishAsync(turn, token).AttachExternalCancellation(token);
+            var removal = turn.ReleasedPartId.HasValue
+                ? _operations.ReleasePartAsync(turn, token)
+                : UniTask.CompletedTask;
+            await UniTask.WhenAll(removal, CollectAsync(attempt, turn, token)).AttachExternalCancellation(token);
             EnsureCurrent(attempt, token);
             attempt.CompleteTurn(turn);
             return result;
+        }
+
+        private async UniTask CollectAsync(LevelAttempt attempt, AttemptTurn turn, CancellationToken token)
+        {
+            await _operations.ArriveAsync(turn, token).AttachExternalCancellation(token);
+            EnsureCurrent(attempt, token);
+            attempt.ConfirmArrival(turn);
+            await _operations.FinishAsync(turn, token).AttachExternalCancellation(token);
         }
 
         public void Restart()

@@ -109,9 +109,10 @@ namespace Screw.Tests.Levels
         [TestCase("unknownId")]
         [TestCase("nullStep")]
         [TestCase("camera")]
-        [TestCase("position")]
-        [TestCase("shortPosition")]
-        [TestCase("nanPosition")]
+        [TestCase("rotation")]
+        [TestCase("missingRotation")]
+        [TestCase("shortRotation")]
+        [TestCase("nanRotation")]
         [TestCase("infiniteRotation")]
         [TestCase("viewport")]
         [TestCase("fov")]
@@ -123,17 +124,18 @@ namespace Screw.Tests.Levels
             var first = json["steps"][0];
             switch (defect)
             {
-                case "schema": json["schemaVersion"] = 2; break;
+                case "schema": json["schemaVersion"] = 1; break;
                 case "level": json["levelNumber"] = 2; break;
                 case "missingStep": first.Remove(); break;
                 case "duplicateId": json["steps"][1]["boltId"] = first["boltId"].DeepClone(); break;
                 case "unknownId": first["boltId"] = 999; break;
                 case "nullStep": json["steps"][0] = null; break;
                 case "camera": json["camera"] = null; break;
-                case "position": first["cameraPosition"] = null; break;
-                case "shortPosition": first["cameraPosition"] = new JArray(0f, 0f); break;
-                case "nanPosition": first["cameraPosition"][0] = float.NaN; break;
-                case "infiniteRotation": first["cameraEulerDegrees"][0] = float.PositiveInfinity; break;
+                case "rotation": first["levelEulerDegrees"] = null; break;
+                case "missingRotation": first["levelEulerDegrees"].Parent.Remove(); break;
+                case "shortRotation": first["levelEulerDegrees"] = new JArray(0f, 0f); break;
+                case "nanRotation": first["levelEulerDegrees"][0] = float.NaN; break;
+                case "infiniteRotation": first["levelEulerDegrees"][0] = float.PositiveInfinity; break;
                 case "viewport": first["viewportPoint"][0] = 1.01f; break;
                 case "fov": json["camera"]["fieldOfViewDegrees"] = 180f; break;
                 case "aspect": json["camera"]["aspect"] = 0f; break;
@@ -189,14 +191,13 @@ namespace Screw.Tests.Levels
         {
             return new LevelRouteData
             {
-                SchemaVersion = 1,
+                SchemaVersion = 2,
                 LevelNumber = source.Number,
                 Camera = new RouteCameraData { FieldOfViewDegrees = 60f, Aspect = 9f / 16f },
                 Steps = source.Bolts.Select(bolt => new RouteStepData
                 {
                     BoltId = bolt.Id,
-                    CameraPosition = new[] { 0f, 0f, -24f },
-                    CameraEulerDegrees = new float[3],
+                    LevelEulerDegrees = new float[3],
                     ViewportPoint = new[] { 0.5f, 0.5f }
                 }).ToArray()
             };

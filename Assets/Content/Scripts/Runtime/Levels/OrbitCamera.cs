@@ -10,7 +10,7 @@ namespace Screw.Levels
     public sealed class OrbitCamera : MonoBehaviour
     {
         [SerializeField] private Transform _levelRoot;
-        [SerializeField] private Vector2 _startAngles = new Vector2(0f, 15f);
+        [SerializeField] private Vector2 _startAngles = new Vector2(0f, -15f);
         [SerializeField, Min(1f)] private float _framingPadding = 1.15f;
         [SerializeField, Min(0f)] private float _degreesPerScreen = 180f;
         [SerializeField, Min(1f)] private float _dragThresholdPixels = 10f;
@@ -26,6 +26,9 @@ namespace Screw.Levels
         private float _pitch;
         private float _aspect;
         private float _fieldOfView;
+        private bool _isFramed;
+        private Vector3 _initialPosition;
+        private Quaternion _initialRotation;
         private bool _usingTouch;
         private bool _suppressTouches;
         private EventSystem _uiEventSystem;
@@ -71,20 +74,27 @@ namespace Screw.Levels
                 throw new InvalidOperationException("Orbit camera requires perspective projection.");
             }
 
-            var renderers = _levelRoot.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0)
+            if (!_isFramed)
             {
-                throw new InvalidOperationException("Orbit camera requires level renderers.");
+                var renderers = _levelRoot.GetComponentsInChildren<Renderer>();
+                if (renderers.Length == 0)
+                {
+                    throw new InvalidOperationException("Level orbit requires level renderers.");
+                }
+
+                var bounds = renderers[0].bounds;
+                foreach (var renderer in renderers)
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+
+                _pivot = bounds.center;
+                _radius = bounds.extents.magnitude;
+                _initialPosition = _levelRoot.position;
+                _initialRotation = _levelRoot.rotation;
+                _isFramed = true;
             }
 
-            var bounds = renderers[0].bounds;
-            foreach (var renderer in renderers)
-            {
-                bounds.Encapsulate(renderer.bounds);
-            }
-
-            _pivot = bounds.center;
-            _radius = bounds.extents.magnitude;
             ResetOrbit();
         }
 
@@ -175,7 +185,6 @@ namespace Screw.Levels
             if (_camera.aspect != _aspect || _camera.fieldOfView != _fieldOfView)
             {
                 UpdateDistance();
-                ApplyPose();
             }
         }
 
@@ -263,7 +272,7 @@ namespace Screw.Levels
         private void Drag(Vector2 deltaPixels)
         {
             var screenSize = Mathf.Max(1, Mathf.Min(_camera.pixelWidth, _camera.pixelHeight));
-            Rotate(-deltaPixels * (_degreesPerScreen / screenSize));
+            Rotate(new Vector2(-deltaPixels.x, deltaPixels.y) * (_degreesPerScreen / screenSize));
         }
 
         private void UpdateDistance()
@@ -274,12 +283,13 @@ namespace Screw.Levels
             var horizontalHalfAngle = Mathf.Atan(Mathf.Tan(verticalHalfAngle) * _aspect);
             var fitDistance = _radius * _framingPadding / Mathf.Sin(Mathf.Min(verticalHalfAngle, horizontalHalfAngle));
             _distance = Mathf.Max(fitDistance, _radius + _camera.nearClipPlane);
+            transform.SetPositionAndRotation(_pivot + Vector3.back * _distance, Quaternion.identity);
         }
 
         private void ApplyPose()
         {
             var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            transform.SetPositionAndRotation(_pivot + rotation * (Vector3.back * _distance), rotation);
+            _levelRoot.SetPositionAndRotation(_pivot + rotation * (_initialPosition - _pivot), rotation * _initialRotation);
         }
     }
 }

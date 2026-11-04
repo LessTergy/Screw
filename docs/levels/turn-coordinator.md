@@ -1,4 +1,4 @@
-# P4.1: координатор хода и отмена попытки
+# Координатор хода и ожидание удаления — P4.1–P4.4
 
 [Индекс и приёмка](../development-plan/README.md) · [План P4](../development-plan/p4-playable-loop.md)
 
@@ -9,10 +9,12 @@ TurnCoordinator управляет порядком операций одног�
 PlayAsync(boltId) сразу вызывает ReserveBolt. Отклонённый ввод возвращает исходный BoltReservationResult и не запускает визуальные операции; очередь нажатий не хранится. Для принятого хода:
 
 1. Await DetachAsync → ConfirmDetachment: выход из крепления уменьшает счётчик владельца; ReleasedPartId становится доступен операциям следующей фазы.
-2. Await ArriveAsync → ConfirmArrival: прибытие запускает логическую сортировку и формирует SortingSteps.
-3. Await FinishAsync → CompleteTurn: блокировка сохраняется до завершения визуального исполнения сортировки и ожиданий удаления освобождённой детали.
+2. Если вышло последнее крепление владельца, сразу запустить ReleasePartAsync. Параллельно выполняется CollectAsync: await ArriveAsync → ConfirmArrival → await FinishAsync. Прибытие запускает логическую сортировку и формирует SortingSteps; реальные перелёты и замены не ждут падения.
+3. UniTask.WhenAll ждёт обе ветки — всю сортировку и фактическое уничтожение освобождённой детали. Только затем вызывается CompleteTurn: открывается следующий ход либо устанавливается Won. Если владелец ещё закреплён, отдельного ожидания удаления нет.
 
-ITurnOperations описывает границы реальных операций P4.2–P4.4. DetachAsync/ArriveAsync/FinishAsync получают тот же AttemptTurn и CancellationToken попытки. Реализация операций должна менять представление, передавать токен во вложенные ожидания и останавливать свои твины/физические callbacks при отмене. Логические Confirm-методы вызывает координатор. Код рассчитан на вызовы из игрового потока Unity.
+ITurnOperations описывает границы реальных операций P4.2–P4.4. DetachAsync/ReleasePartAsync/ArriveAsync/FinishAsync получают тот же AttemptTurn и CancellationToken попытки. ReleasePartAsync вызывается только при наличии ReleasedPartId и возвращает существующий LevelPartPhysics.ReleaseAsync; намеренного запуска без ожидания больше нет. Каждый UniTask потребляется один раз, общий изменяемый pending-task не хранится. Реализация операций передаёт токен во вложенные ожидания и останавливает свои твины/физические callbacks при отмене. Логические Confirm-методы вызывает координатор. Код рассчитан на вызовы из игрового потока Unity.
+
+Во время ожидания CurrentTurn остаётся в AwaitingCompletion после прибытия. ReserveBolt отклоняет повторные нажатия без очереди. OrbitCamera и PointerGesture не блокируются: игрок вращает закреплённую сборку, освобождая застрявшее тело, при неподвижной камере. Резервного таймера и автоматического поворота нет. Новые поля Inspector не нужны.
 
 ## Отмена и ошибки
 
@@ -22,12 +24,20 @@ Restart сначала создаёт свежую попытку через Lev
 
 Отмена возвращается вызывающему коду как OperationCanceledException. Прочие ошибки операций также передаются вызывающему коду; текущий ход остаётся заблокированным до Restart, чтобы не разрешить следующий ход поверх частично выполненной анимации. При подключении выбора P4.2 вызывающий код должен наблюдать UniTask и явно обрабатывать ошибки намеренного запуска без ожидания.
 
-## Проверка и передача P4.2
+## История P4.1 и передача P4.2
 
 15 случаев TurnCoordinatorTests используют управляемые UniTaskCompletionSource только в тестах. Проверяются переходы по одному завершению, отклонение повторного ввода во всех трёх фазах без очереди, немедленная отмена и поздние callbacks после restart/dispose, несколько сбросов, ошибочный boltId и исключения каждой операции. Перед чтением результата Task тест подтверждает его завершение; блокирующих ожиданий и задержек по времени нет.
 
 04.11.2026 через Unity MCP выполнена вся Screw.EditMode.Tests: **277 Passed, 0 Failed, 0 Skipped**, включая эти 15 новых случаев и регрессию P1–P3. После компиляции Console без ошибок.
 
-В Unity дополнительных ссылок Inspector для P4.1 назначать не требуется. Для повторения проверки выполнить Test Runner → EditMode → Screw.Tests.Gameplay.TurnCoordinatorTests, ожидаются 15 Passed. В P4.2 GameplayLifetimeScope получил явную ссылку на готовый LevelGameplayDefinition и зарегистрировал координатор с BoltTurnOperations; GameplaySession передаёт BoltSelection.Selected в ход. [Настоящие операции и проверка P4.2](bolt-turns.md).
+В Unity дополнительных ссылок Inspector для P4.1 назначать не требуется. Первоначальные 15 случаев расширены в P4.4 до 23: добавлены оба порядка завершения, ход без освобождения, задержка победы и фаза ожидания удаления для повторного ввода, restart/dispose и ошибки. В P4.2 GameplayLifetimeScope получил явную ссылку на готовый LevelGameplayDefinition и зарегистрировал координатор с BoltTurnOperations; GameplaySession передаёт BoltSelection.Selected в ход. [Настоящие операции и проверка P4.2](bolt-turns.md).
 
-Контракт UniTask проверен через Context7 по [официальной документации отмены](https://github.com/Cysharp/UniTask#cancellation-and-exception-handling), [AttachExternalCancellation](https://github.com/Cysharp/UniTask/blob/master/_autodocs/api-reference/unitask-extensions.md) и [UniTaskCompletionSource](https://github.com/Cysharp/UniTask/blob/master/_autodocs/api-reference/unitask-completion-source.md).
+## Проверка P4.4
+
+04.11.2026 через Unity MCP прошли **287 EditMode + 52 PlayMode = 339 Passed, 0 Failed/Skipped**. Все 23 случая TurnCoordinatorTests прошли; PlayMode выполнен двумя запусками (21 Gameplay и 31 остальных). Физический тест удерживает деталь на закреплённой поверхности после сортировки и дольше прежнего таймера, затем поворот снимает опору; только удаление открывает следующий ход. Производственный pointer-тест нажимает доступную головку 20 раз, проверяет отсутствие нового хода, выполняет drag при неподвижной камере и перезапускает сцену во время ожидания. Старое ожидание отменено, старый объект уничтожен, новая попытка не получает отложенных нажатий. Полный W пройден дважды с блокировкой до удаления всех четырёх деталей, включая задержку Won.
+
+В обычном Bootstrap → Gameplay после снятия 0/1/2 и 1.5 с ожидания застрявшая деталь сохранила CurrentTurn. Двадцать повторных команд отклонены; настоящий BeginPointer/UpdatePointer drag изменил сборку, сохранив позу камеры. После поворотов деталь упала и удалилась, CurrentTurn очистился; через дополнительное ожидание сняты только исходные три болта. Console без ошибок/предупреждений.
+
+Для пользовательской приёмки: запустить Bootstrap, снять последнее крепление детали, дождаться сортировки и нажать другую головку — она остаётся на месте. Поворотом освободить деталь; после её исчезновения требуется новое нажатие, автоматического снятия нет. На последнем владельце результат должен ждать удаления. Пользователь подтвердил P4.4; кнопки результата/сброса [P4.5](restart-and-result.md) подключены и проверены. Итоговый пользовательский Gate и устройство остаются открыты: [список P4.6](p4-acceptance.md).
+
+Контракт UniTask проверен через Context7 по [официальной документации отмены](https://github.com/Cysharp/UniTask#cancellation-and-exception-handling), [WhenAll](https://github.com/Cysharp/UniTask/blob/master/_autodocs/api-reference/unitask-when.md), [AttachExternalCancellation](https://github.com/Cysharp/UniTask/blob/master/_autodocs/api-reference/unitask-extensions.md) и [UniTaskCompletionSource](https://github.com/Cysharp/UniTask/blob/master/_autodocs/api-reference/unitask-completion-source.md).

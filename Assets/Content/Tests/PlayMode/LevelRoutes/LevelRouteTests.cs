@@ -87,9 +87,47 @@ namespace Screw.Tests.Levels
         }
 
         [UnityTest]
+        public IEnumerator ActualDragRotatesAssemblyWithoutMovingCameraOrSelectingABolt()
+        {
+            var view = _scope.LevelView;
+            var camera = _scope.SceneCamera;
+            var input = camera.GetComponent<OrbitCamera>();
+            var selection = _scope.Container.Resolve<BoltSelection>();
+            var cameraPosition = camera.transform.position;
+            var cameraRotation = camera.transform.rotation;
+            var levelRotation = view.transform.rotation;
+            var groundPosition = _scope.Ground.position;
+            var gravity = Physics.gravity;
+            var selected = 0;
+            System.Action<LevelBoltBinding> onSelected = bolt => selected++;
+            selection.Selected += onSelected;
+            try
+            {
+                Vector2 start = camera.ViewportToScreenPoint(new Vector3(0.45f, 0.4f, 0f));
+                var end = start + Vector2.right * (Mathf.Min(camera.pixelWidth, camera.pixelHeight) * 0.2f);
+                input.BeginPointer(-1, start);
+                input.UpdatePointer(-1, end, false);
+                input.UpdatePointer(-1, end, true);
+                Assert.That(Quaternion.Angle(view.transform.rotation, levelRotation), Is.GreaterThan(1f));
+                Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
+                Assert.That(camera.transform.rotation, Is.EqualTo(cameraRotation));
+                Assert.That(_scope.Ground.position, Is.EqualTo(groundPosition));
+                Assert.That(Physics.gravity, Is.EqualTo(gravity));
+                Assert.That(selected, Is.Zero);
+                view.ValidateBindings();
+            }
+            finally
+            {
+                selection.Selected -= onSelected;
+            }
+
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator UnreachableRecordedPoseIsRejectedBeforeRemoval()
         {
-            _route.Steps[0].CameraPosition[0] += 100f;
+            _route.Steps[0].LevelEulerDegrees[2] = 30f;
             var view = _scope.LevelView;
             using (var session = new LevelRouteSession(view, _scope.SceneCamera, _scope.Container.Resolve<BoltSelection>(), _route))
             {
@@ -112,9 +150,9 @@ namespace Screw.Tests.Levels
             camera.fieldOfView = _route.Camera.FieldOfViewDegrees;
             camera.aspect = _route.Camera.Aspect;
             input.FrameLevel();
-            input.Rotate(new Vector2(-input.Yaw, 270f - input.Pitch));
+            input.Rotate(new Vector2(-input.Yaw, 90f - input.Pitch));
             var target = view.GetBolt(3);
-            Vector2 screen = camera.WorldToScreenPoint(target.Node.GetComponent<Collider>().bounds.center);
+            Vector2 screen = camera.WorldToScreenPoint(target.Node.TransformPoint(target.Node.GetComponent<BoxCollider>().center));
             var ray = camera.ScreenPointToRay(screen);
             Assert.That(Vector3.Dot(target.Node.forward, -ray.direction), Is.GreaterThan(0.1f));
             Assert.That(selection.TrySelect(screen, out _), Is.False);
@@ -141,7 +179,7 @@ namespace Screw.Tests.Levels
             {
                 session.PrepareNext();
                 var other = view.GetBolt(1);
-                Vector2 screen = _scope.SceneCamera.WorldToScreenPoint(other.Node.GetComponent<Collider>().bounds.center);
+                Vector2 screen = _scope.SceneCamera.WorldToScreenPoint(other.Node.TransformPoint(other.Node.GetComponent<BoxCollider>().center));
                 var input = _scope.SceneCamera.GetComponent<OrbitCamera>();
                 input.BeginPointer(-1, screen);
                 input.UpdatePointer(-1, screen, true);

@@ -53,10 +53,12 @@ namespace Screw.Tests.Gameplay
             Assert.That(_coordinator.Attempt.CurrentTurn, Is.SameAs(turn));
 
             waits.Finish.TrySetResult();
+            Assert.That(task.IsCompleted, Is.False);
+            waits.Removal.TrySetResult();
             Assert.That(Result(task).Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Completed));
             Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
-            Assert.That(waits.Tokens, Has.Count.EqualTo(3));
+            Assert.That(waits.Tokens, Has.Count.EqualTo(4));
             Assert.That(waits.Tokens.All(token => token == waits.Tokens[0] && token.CanBeCanceled), Is.True);
             AttemptTestSteps.AssertConservation(_coordinator.Attempt);
         }
@@ -64,13 +66,14 @@ namespace Screw.Tests.Gameplay
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]
+        [TestCase(3)]
         public void RepeatedInputIsRejectedInEveryPhaseAndNeverQueued(int phase)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(phase);
             Assert.That(Result(_coordinator.PlayAsync(1).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
             Assert.That(Result(_coordinator.PlayAsync(0).AsTask()).Outcome, Is.EqualTo(
-                phase == 2 ? BoltReservationOutcome.AlreadyRemoved : BoltReservationOutcome.AlreadyReserved));
+                phase >= 2 ? BoltReservationOutcome.AlreadyRemoved : BoltReservationOutcome.AlreadyReserved));
             Finish(waits);
             Result(task);
             Assert.That(_operations.Turns, Has.Count.EqualTo(1));
@@ -81,6 +84,7 @@ namespace Screw.Tests.Gameplay
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]
+        [TestCase(3)]
         public void RestartCancelsPromptlyAndLateCompletionsCannotChangeNewAttempt(int phase)
         {
             var oldTask = _coordinator.PlayAsync(0).AsTask();
@@ -109,6 +113,7 @@ namespace Screw.Tests.Gameplay
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]
+        [TestCase(3)]
         public void DisposalCancelsAllPhasesAndRejectsFurtherWork(int phase)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
@@ -127,12 +132,13 @@ namespace Screw.Tests.Gameplay
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]
+        [TestCase(3)]
         public void OperationErrorsPropagateAndKeepTurnBlockedUntilRestart(int phase)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(phase);
             var error = new InvalidOperationException("Controlled operation failure.");
-            var pending = phase == 0 ? waits.Detach : phase == 1 ? waits.Arrive : waits.Finish;
+            var pending = phase == 0 ? waits.Detach : phase == 1 ? waits.Arrive : phase == 2 ? waits.Finish : waits.Removal;
             pending.TrySetException(error);
             var observed = Assert.Throws<InvalidOperationException>(() => Result(task));
             Assert.That(observed, Is.SameAs(error));
@@ -169,6 +175,72 @@ namespace Screw.Tests.Gameplay
             Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void BothSortingAndRemovalMustFinishBeforeUnlocking(bool removalFirst)
+        {
+            var task = _coordinator.PlayAsync(0).AsTask();
+            var waits = AdvanceTo(2);
+            Assert.That(waits.RemovalRequested && waits.FinishRequested, Is.True);
+            if (removalFirst)
+            {
+                waits.Removal.TrySetResult();
+            }
+            else
+            {
+                waits.Finish.TrySetResult();
+            }
+
+            Assert.That(task.IsCompleted, Is.False);
+            for (var index = 0; index < 20; index++)
+            {
+                Assert.That(Result(_coordinator.PlayAsync(1).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+            }
+
+            Finish(waits);
+            Result(task);
+            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_operations.Turns, Has.Count.EqualTo(1), "Rejected taps must not be queued.");
+            var next = _coordinator.PlayAsync(1).AsTask();
+            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
+            Finish(_operations.Turns.Last());
+            Result(next);
+        }
+
+        [Test]
+        public void TurnWithoutReleasedPartDoesNotWaitForRemoval()
+        {
+            var task = _coordinator.PlayAsync(1).AsTask();
+            var waits = AdvanceTo(2);
+            Assert.That(waits.Turn.ReleasedPartId, Is.Null);
+            Assert.That(waits.RemovalRequested, Is.False);
+            waits.Finish.TrySetResult();
+            Result(task);
+            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+        }
+
+        [Test]
+        public void VictoryWaitsForFinalPartRemovalAfterAllSortingCompletes()
+        {
+            var count = _coordinator.Attempt.Bolts.Count;
+            for (var id = 0; id < count - 1; id++)
+            {
+                var task = _coordinator.PlayAsync(id).AsTask();
+                Finish(_operations.Turns.Last());
+                Result(task);
+            }
+
+            var final = _coordinator.PlayAsync(count - 1).AsTask();
+            var waits = AdvanceTo(3);
+            Assert.That(waits.Turn.ReleasedPartId.HasValue, Is.True);
+            Assert.That(_coordinator.Attempt.CollectedBoltIds.Count, Is.EqualTo(count));
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            Assert.That(final.IsCompleted, Is.False);
+            waits.Removal.TrySetResult();
+            Result(final);
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Won));
+        }
+
         private ControlledTurn AdvanceTo(int phase)
         {
             var waits = _operations.Turns.Last();
@@ -182,6 +254,11 @@ namespace Screw.Tests.Gameplay
                 waits.Arrive.TrySetResult();
             }
 
+            if (phase >= 3)
+            {
+                waits.Finish.TrySetResult();
+            }
+
             return waits;
         }
 
@@ -190,6 +267,7 @@ namespace Screw.Tests.Gameplay
             waits.Detach.TrySetResult();
             waits.Arrive.TrySetResult();
             waits.Finish.TrySetResult();
+            waits.Removal.TrySetResult();
         }
 
         private static T Result<T>(Task<T> task)
@@ -210,9 +288,11 @@ namespace Screw.Tests.Gameplay
             public readonly UniTaskCompletionSource Detach = new UniTaskCompletionSource();
             public readonly UniTaskCompletionSource Arrive = new UniTaskCompletionSource();
             public readonly UniTaskCompletionSource Finish = new UniTaskCompletionSource();
+            public readonly UniTaskCompletionSource Removal = new UniTaskCompletionSource();
             public readonly List<CancellationToken> Tokens = new List<CancellationToken>();
             public bool ArrivalRequested;
             public bool FinishRequested;
+            public bool RemovalRequested;
         }
 
         private sealed class ControlledOperations : ITurnOperations
@@ -225,6 +305,14 @@ namespace Screw.Tests.Gameplay
                 waits.Tokens.Add(cancellationToken);
                 Turns.Add(waits);
                 return waits.Detach.Task;
+            }
+
+            public UniTask ReleasePartAsync(AttemptTurn turn, CancellationToken cancellationToken)
+            {
+                var waits = Turns.Single(item => ReferenceEquals(item.Turn, turn));
+                waits.Tokens.Add(cancellationToken);
+                waits.RemovalRequested = true;
+                return waits.Removal.Task;
             }
 
             public UniTask ArriveAsync(AttemptTurn turn, CancellationToken cancellationToken)

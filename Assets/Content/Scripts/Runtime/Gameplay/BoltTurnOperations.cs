@@ -20,6 +20,7 @@ namespace Screw.Gameplay
         private readonly Dictionary<int, Transform> _bolts = new Dictionary<int, Transform>();
         private LevelAttempt _attempt;
         private LevelContentCatalog _catalog;
+        private LevelPartPhysics _partPhysics;
 
         public CollectionView Collection
         {
@@ -27,10 +28,11 @@ namespace Screw.Gameplay
         }
 
         [Inject]
-        public void Construct(LevelView view, LevelAttempt attempt, LevelContentCatalog catalog)
+        public void Construct(LevelView view, LevelAttempt attempt, LevelContentCatalog catalog, LevelPartPhysics partPhysics)
         {
             _attempt = attempt;
             _catalog = catalog;
+            _partPhysics = partPhysics;
             _bolts.Clear();
             foreach (var binding in view.Bolts)
             {
@@ -48,12 +50,17 @@ namespace Screw.Gameplay
             cancellationToken.ThrowIfCancellationRequested();
             var bolt = _bolts[turn.BoltId];
             bolt.GetComponent<Collider>().enabled = false;
-            var destination = bolt.position + bolt.TransformVector(Vector3.forward * _withdrawDistance);
+            var destination = bolt.localPosition + bolt.localRotation * (Vector3.forward * (_withdrawDistance * bolt.localScale.z));
             var sequence = DOTween.Sequence();
-            sequence.Append(bolt.DOMove(destination, _detachDuration).SetEase(Ease.InOutSine));
+            sequence.Append(bolt.DOLocalMove(destination, _detachDuration).SetEase(Ease.InOutSine));
             sequence.Join(bolt.DOLocalRotate(new Vector3(0f, 0f, 720f), _detachDuration, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.InOutSine));
             await Animate(sequence, cancellationToken);
+        }
+
+        public UniTask ReleasePartAsync(AttemptTurn turn, CancellationToken cancellationToken)
+        {
+            return _partPhysics.ReleaseAsync(turn.ReleasedPartId.Value, cancellationToken);
         }
 
         public async UniTask ArriveAsync(AttemptTurn turn, CancellationToken cancellationToken)

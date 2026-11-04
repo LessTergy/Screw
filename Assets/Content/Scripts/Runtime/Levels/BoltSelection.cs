@@ -11,6 +11,7 @@ namespace Screw.Levels
         private readonly Camera _camera;
         private readonly OrbitCamera _input;
         private readonly PhysicsScene _physicsScene;
+        private readonly int _raycastLayers = Physics.DefaultRaycastLayers & ~LayerMask.GetMask("LevelGround");
         private readonly Dictionary<Collider, LevelBoltBinding> _bolts = new Dictionary<Collider, LevelBoltBinding>();
 
         public event Action<LevelBoltBinding> Selected;
@@ -31,7 +32,7 @@ namespace Screw.Levels
                 foreach (var collider in part.Node.GetComponentsInChildren<Collider>())
                 {
                     if (collider.enabled && collider.gameObject.activeInHierarchy && !collider.isTrigger
-                        && (Physics.DefaultRaycastLayers & (1 << collider.gameObject.layer)) != 0)
+                        && (_raycastLayers & (1 << collider.gameObject.layer)) != 0)
                     {
                         hasBlocker = true;
                         break;
@@ -68,7 +69,7 @@ namespace Screw.Levels
                 / Vector3.Dot(ray.direction, _camera.transform.forward);
             Physics.SyncTransforms();
             if (!_physicsScene.Raycast(ray.origin, ray.direction, out var hit, distance,
-                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                _raycastLayers, QueryTriggerInteraction.Ignore))
             {
                 return false;
             }

@@ -98,8 +98,20 @@ namespace Screw.Tests.Bootstrap
                         Is.SameAs(view.ContentCatalog.GetLevel(1).Prefab));
                     var orbit = gameplay.SceneCamera.GetComponent<OrbitCamera>();
                     Assert.That(orbit, Is.Not.Null);
-                    Assert.That(orbit.LevelRoot, Is.SameAs(view.LevelRoot));
+                    Assert.That(orbit.LevelRoot, Is.SameAs(view.transform));
                     Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<Camera>(true)).Count(), Is.EqualTo(1));
+                    var session = new SerializedObject(gameplay.GameplaySession);
+                    foreach (var field in new[] { "_restartButton", "_retryButton", "_resultPanel", "_resultLabel" })
+                    {
+                        Assert.That(session.FindProperty(field).objectReferenceValue, Is.Not.Null, field);
+                    }
+
+                    var result = (GameObject)session.FindProperty("_resultPanel").objectReferenceValue;
+                    Assert.That(result.activeSelf, Is.False);
+                    Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<Canvas>(true)).Single().renderMode,
+                        Is.EqualTo(RenderMode.ScreenSpaceOverlay));
+                    Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<UnityEngine.EventSystems.EventSystem>(true)).Count(),
+                        Is.EqualTo(1));
                 }
             }
             finally
