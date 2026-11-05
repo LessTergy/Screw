@@ -85,3 +85,7 @@ crashlytics-build.properties
 # Find Reference 2
 FR2_Cache.asset
 FR2_Cache.asset.meta
+
+# Local collider preparation environment and scratch data
+/.tools/
+**/__pycache__/

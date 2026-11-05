@@ -52,6 +52,7 @@ namespace Screw.Gameplay
 
                 SetLayer(part.Node, attachedLayer);
                 var body = part.Node.gameObject.AddComponent<Rigidbody>();
+                body.interpolation = RigidbodyInterpolation.None;
                 body.isKinematic = true;
                 body.useGravity = false;
                 _parts.Add(part.Id, (body, renderers, part.Node.GetComponentsInChildren<Collider>()));
@@ -76,6 +77,7 @@ namespace Screw.Gameplay
                 Physics.SyncTransforms();
                 body.isKinematic = false;
                 body.useGravity = true;
+                body.interpolation = RigidbodyInterpolation.Interpolate;
                 body.ResetCenterOfMass();
                 body.ResetInertiaTensor();
                 body.WakeUp();

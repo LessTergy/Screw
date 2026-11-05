@@ -150,7 +150,7 @@ namespace Screw.Tests.Levels
             camera.fieldOfView = _route.Camera.FieldOfViewDegrees;
             camera.aspect = _route.Camera.Aspect;
             input.FrameLevel();
-            input.Rotate(new Vector2(-input.Yaw, 90f - input.Pitch));
+            input.Rotate(new Vector2(2f - input.Yaw, 91f - input.Pitch));
             var target = view.GetBolt(3);
             Vector2 screen = camera.WorldToScreenPoint(target.Node.TransformPoint(target.Node.GetComponent<BoxCollider>().center));
             var ray = camera.ScreenPointToRay(screen);

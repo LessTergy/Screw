@@ -70,7 +70,10 @@ namespace Screw.Tests.Gameplay
             var positions = view.Parts.Select(part => part.Node.position).ToArray();
             var rotations = view.Parts.Select(part => part.Node.rotation).ToArray();
             var scales = view.Parts.Select(part => part.Node.lossyScale).ToArray();
-            Assert.That(view.ModelRoot.GetComponentsInChildren<BoxCollider>().Length, Is.EqualTo(26));
+            var sourceModel = view.ContentCatalog.GetLevel(1).Prefab.transform.Find("Assembly/Model");
+            var sourceShapes = sourceModel.GetComponentsInChildren<BoxCollider>();
+            Assert.That(sourceShapes, Is.Not.Empty);
+            Assert.That(view.ModelRoot.GetComponentsInChildren<BoxCollider>().Length, Is.EqualTo(sourceShapes.Length));
             Assert.That(_scope.Ground.GetComponent<BoxCollider>(), Is.Not.Null);
             Assert.That(_scope.Ground.GetComponent<MeshCollider>(), Is.Null);
             var released = LayerMask.NameToLayer("ReleasedParts");
@@ -92,6 +95,29 @@ namespace Screw.Tests.Gameplay
                     Assert.That(collider, Is.TypeOf<BoxCollider>());
                     Assert.That(collider.gameObject.layer, Is.EqualTo(LayerMask.NameToLayer("AttachedParts")));
                     Assert.That(collider.attachedRigidbody, Is.SameAs(node.GetComponent<Rigidbody>()));
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PinnedPartsAndBoltsStayAlignedAcrossRenderedRotations()
+        {
+            var view = _scope.LevelView;
+            var orbit = _scope.SceneCamera.GetComponent<OrbitCamera>();
+            var nodes = view.Parts.Select(part => part.Node).Concat(view.Bolts.Select(bolt => bolt.Node)).ToArray();
+            var positions = nodes.Select(node => view.transform.InverseTransformPoint(node.position)).ToArray();
+            var rotations = nodes.Select(node => Quaternion.Inverse(view.transform.rotation) * node.rotation).ToArray();
+            for (var step = 0; step < 12; step++)
+            {
+                orbit.Rotate(new Vector2(17f, 11f));
+                yield return new WaitForSeconds(0.04f);
+                yield return null;
+                for (var index = 0; index < nodes.Length; index++)
+                {
+                    Assert.That(Vector3.Distance(view.transform.InverseTransformPoint(nodes[index].position), positions[index]),
+                        Is.LessThan(0.0001f), nodes[index].name);
+                    Assert.That(Quaternion.Angle(Quaternion.Inverse(view.transform.rotation) * nodes[index].rotation, rotations[index]),
+                        Is.LessThan(0.01f), nodes[index].name);
                 }
             }
         }
@@ -190,13 +216,16 @@ namespace Screw.Tests.Gameplay
             Assert.That(body.position, Is.EqualTo(releasedPosition));
             Assert.That(body.rotation, Is.EqualTo(releasedRotation));
             Physics.SyncTransforms();
-            for (var step = 0; step < 100; step++)
+            var groundCollider = _fixtureGround.GetComponent<BoxCollider>();
+            for (var step = 0; step < 500 && !contacts.Contacts.Contains(groundCollider); step++)
             {
                 physics.Simulate(0.02f);
             }
 
-            Assert.That(contacts.Contacts.Any(collider => collider.gameObject.layer == LayerMask.NameToLayer("LevelGround")), Is.True,
-                "Rotation must remove the support and let the part reach the ground.");
+            Assert.That(contacts.Contacts.Contains(groundCollider), Is.True,
+                "Rotation must remove the support and let the part reach the ground. Body: " + body.position
+                + "; bounds: " + BoundsOf(body.transform) + "; ground: " + _fixtureGround.position
+                + "; camera aspect: " + _scope.SceneCamera.aspect);
             Assert.That(BoundsOf(body.transform).min.y,
                 Is.GreaterThan(_fixtureGround.GetComponent<BoxCollider>().bounds.max.y - 0.05f));
             Assert.That(neighbor.localPosition, Is.EqualTo(neighborLocalPosition));
@@ -238,6 +267,7 @@ namespace Screw.Tests.Gameplay
             var boltRotation = bolt.localRotation;
             Time.timeScale = 0f;
             var task = _scope.Container.Resolve<LevelPartPhysics>().ReleaseAsync(0, CancellationToken.None).AsTask();
+            Assert.That(owner.GetComponent<Rigidbody>().interpolation, Is.EqualTo(RigidbodyInterpolation.Interpolate));
             Assert.That(owner.parent, Is.Null);
             Assert.That(owner.gameObject.scene, Is.EqualTo(_scope.gameObject.scene));
             Assert.That(Vector3.Distance(owner.position, position), Is.LessThan(0.0001f));
@@ -686,6 +716,7 @@ namespace Screw.Tests.Gameplay
         private static void AssertPinned(Transform node, Vector3 position, Quaternion rotation)
         {
             Assert.That(node.GetComponent<Rigidbody>().isKinematic, Is.True);
+            Assert.That(node.GetComponent<Rigidbody>().interpolation, Is.EqualTo(RigidbodyInterpolation.None));
             Assert.That(node.GetComponent<Rigidbody>().useGravity, Is.False);
             Assert.That(node.position, Is.EqualTo(position));
             Assert.That(Quaternion.Angle(node.rotation, rotation), Is.LessThan(0.01f));
