@@ -1,0 +1,435 @@
+{
+  "schemaVersion": 1,
+  "modelName": "AlarmClockPrototype",
+  "glbSha256": "1afd7b044d23c422a51eaba558722911c9c0cfa422ca55fde8e4ca448b593f72",
+  "transformCoordinates": "Blender right-handed, Z up; quaternion WXYZ",
+  "exportCoordinates": "glTF right-handed, Y up",
+  "unit": "1 Blender unit",
+  "parts": [
+    {
+      "id": 0,
+      "name": "Part_000_Base",
+      "nodePath": "Assembly/Model/Part_000_Base",
+      "position": [
+        0.0,
+        0.0,
+        0.79
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -3.6500001,
+          -1.7,
+          0.0
+        ],
+        [
+          3.6500001,
+          1.7,
+          1.58
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "Base.002"
+      ],
+      "boltIds": [
+        5,
+        11
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Part_001_Case",
+      "nodePath": "Assembly/Model/Part_001_Case",
+      "position": [
+        0.0,
+        0.1,
+        6.04
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -4.4099998,
+          -1.4,
+          1.6300001
+        ],
+        [
+          4.4099998,
+          1.6,
+          10.4499998
+        ]
+      ],
+      "triangleCount": 220,
+      "materialSlots": [
+        "Case.002"
+      ],
+      "boltIds": [
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Part_002_Dial",
+      "nodePath": "Assembly/Model/Part_002_Dial",
+      "position": [
+        0.0,
+        -1.8,
+        6.04
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -4.02,
+          -2.1499999,
+          2.02
+        ],
+        [
+          4.02,
+          -1.4499999,
+          10.0599995
+        ]
+      ],
+      "triangleCount": 220,
+      "materialSlots": [
+        "Dial.002"
+      ],
+      "boltIds": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Part_003_LeftBell",
+      "nodePath": "Assembly/Model/Part_003_LeftBell",
+      "position": [
+        -3.6501465,
+        0.1,
+        11.0639954
+      ],
+      "quaternionWXYZ": [
+        0.9510565,
+        0.0,
+        -0.309017,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -6.0743251,
+          -1.0,
+          8.6342859
+        ],
+        [
+          -1.225968,
+          1.2,
+          13.4937048
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "LeftBell.002"
+      ],
+      "boltIds": [
+        3,
+        9
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Part_004_RightBell",
+      "nodePath": "Assembly/Model/Part_004_RightBell",
+      "position": [
+        3.6501465,
+        0.1,
+        11.0639954
+      ],
+      "quaternionWXYZ": [
+        0.9510565,
+        0.0,
+        0.309017,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          1.225968,
+          -1.0,
+          8.6342859
+        ],
+        [
+          6.0743251,
+          1.2,
+          13.4937048
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "RightBell.002"
+      ],
+      "boltIds": [
+        4,
+        10
+      ]
+    }
+  ],
+  "bolts": [
+    {
+      "id": 0,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_000_Owner_002.001",
+      "position": [
+        -2.72,
+        -2.152,
+        5.0999999
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 1,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_001_Owner_002.001",
+      "position": [
+        2.72,
+        -2.152,
+        5.0999999
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 2,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_002_Owner_002.001",
+      "position": [
+        0.0,
+        -2.152,
+        8.8500004
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 3,
+      "ownerId": 3,
+      "nodePath": "Assembly/Bolts/Bolt_003_Owner_003",
+      "position": [
+        -3.2386968,
+        -1.002,
+        10.4976835
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 4,
+      "ownerId": 4,
+      "nodePath": "Assembly/Bolts/Bolt_004_Owner_004.001",
+      "position": [
+        3.2386968,
+        -1.002,
+        10.4976835
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 5,
+      "ownerId": 0,
+      "nodePath": "Assembly/Bolts/Bolt_005_Owner_000",
+      "position": [
+        -1.1,
+        -1.702,
+        0.79
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 6,
+      "ownerId": 1,
+      "nodePath": "Assembly/Bolts/Bolt_006_Owner_001.001",
+      "position": [
+        -2.05,
+        1.602,
+        6.3000002
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 7,
+      "ownerId": 1,
+      "nodePath": "Assembly/Bolts/Bolt_007_Owner_001.001",
+      "position": [
+        2.05,
+        1.602,
+        6.3000002
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 8,
+      "ownerId": 1,
+      "nodePath": "Assembly/Bolts/Bolt_008_Owner_001",
+      "position": [
+        0.0,
+        1.602,
+        3.25
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 9,
+      "ownerId": 3,
+      "nodePath": "Assembly/Bolts/Bolt_009_Owner_003.001",
+      "position": [
+        -3.385643,
+        1.202,
+        10.6999378
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 10,
+      "ownerId": 4,
+      "nodePath": "Assembly/Bolts/Bolt_010_Owner_004",
+      "position": [
+        3.385643,
+        1.202,
+        10.6999378
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 11,
+      "ownerId": 0,
+      "nodePath": "Assembly/Bolts/Bolt_011_Owner_000",
+      "position": [
+        1.1,
+        1.702,
+        0.79
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    }
+  ]
+}

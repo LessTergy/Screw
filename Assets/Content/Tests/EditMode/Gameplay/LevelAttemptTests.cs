@@ -26,7 +26,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
             Assert.That(attempt.Bolts.Count, Is.EqualTo(source.Bolts.Length));
             Assert.That(attempt.Reservations, Is.Empty);
-            Assert.That(attempt.CurrentTurn, Is.Null);
+            Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(attempt.DetachedBoltIds, Is.Empty);
             Assert.That(attempt.CollectedBoltIds, Is.Empty);
             Assert.That(attempt.IsVictoryReady, Is.False);

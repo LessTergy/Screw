@@ -1,0 +1,443 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "fd6caf6d309a19a708e73a119d206de66bdb1c51a4aac1b10a19351b19138587",
+  "parts": 6,
+  "anchors": 12,
+  "triangles": 964,
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "method": "Welded manifold shells, consistent winding, convex hull or simple polygon extrusion, pairwise separating axes and owner surface rays.",
+  "handsThickness": 0.64,
+  "handsColliderRoom": [
+    {
+      "region": "Hub",
+      "boxSize": [
+        1.12,
+        0.52,
+        1.12
+      ],
+      "boxCenter": [
+        0.0,
+        0,
+        0.0
+      ],
+      "localAxisX": [
+        1.0,
+        0,
+        0.0
+      ],
+      "status": "passed"
+    },
+    {
+      "region": "ShortHand",
+      "boxSize": [
+        1.25,
+        0.52,
+        0.46
+      ],
+      "boxCenter": [
+        -1.112423,
+        0,
+        0.756002
+      ],
+      "localAxisX": [
+        -0.827081,
+        0,
+        0.562083
+      ],
+      "status": "passed"
+    },
+    {
+      "region": "LongHand",
+      "boxSize": [
+        1.91,
+        0.52,
+        0.36
+      ],
+      "boxCenter": [
+        1.107697,
+        0,
+        1.256436
+      ],
+      "localAxisX": [
+        0.661312,
+        0,
+        0.750111
+      ],
+      "status": "passed"
+    }
+  ],
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 51.442432,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 60,
+        "geometryVertices": 32,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 241.027347,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 31.134107,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 18.720461,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 18.720461,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 216,
+        "geometryVertices": 110,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 2.715186,
+        "surfaceCheck": "simple polygon extrusion",
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.67
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 7.426912
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 7.426912
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 3.58
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 0.055
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.055
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.795
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 0.37
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 0.37
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 0.045
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 5.399613
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 1.115
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 1.115
+      }
+    ]
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 51.442432,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 60,
+        "geometryVertices": 32,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 241.027347,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 31.134107,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 18.720461,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 18.720461,
+        "surfaceCheck": "convex boundary",
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 216,
+        "geometryVertices": 110,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 2.715186,
+        "surfaceCheck": "simple polygon extrusion",
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.67
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 7.426912
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 7.426912
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 3.58
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 0.055
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.055
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.795
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 0.37
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 0.37
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 0.045
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 5.399612
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 1.115
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 1.115
+      }
+    ],
+    "poses": "passed",
+    "hierarchy": "passed"
+  },
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}

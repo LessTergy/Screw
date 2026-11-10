@@ -87,7 +87,8 @@ namespace Screw.Tests.Gameplay
             {
                 Assert.That(turn.Phase, Is.EqualTo(phase));
                 var before = JsonConvert.SerializeObject(attempt);
-                Assert.That(attempt.ReserveBolt(1).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+                Assert.That(attempt.ReserveBolt(0).Outcome, Is.EqualTo(phase == TurnPhase.AwaitingCompletion
+                    ? BoltReservationOutcome.AlreadyRemoved : BoltReservationOutcome.AlreadyReserved));
                 Assert.That(attempt.ConfirmDetachment(foreign), Is.False);
                 Assert.That(attempt.ConfirmArrival(foreign), Is.False);
                 Assert.That(attempt.CompleteTurn(foreign), Is.False);
@@ -155,7 +156,7 @@ namespace Screw.Tests.Gameplay
             var last = AttemptTestSteps.Arrive(attempt, source.Bolts.Last().Id);
             Assert.That(attempt.IsVictoryReady, Is.True);
             Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
-            Assert.That(attempt.CurrentTurn, Is.SameAs(last));
+            Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(last));
             Assert.That(last.Phase, Is.EqualTo(TurnPhase.AwaitingCompletion));
             Assert.That(attempt.RemainingBoltsByPart.Values.All(count => count == 0), Is.True);
             Assert.That(attempt.PoolCount, Is.Zero);

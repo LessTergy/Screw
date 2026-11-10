@@ -1,0 +1,635 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "a967f385b7bacb4f63a2204851c8bba3d30ad2e0ccf22ef6dd819689e8c2c179",
+  "parts": 8,
+  "anchors": 21,
+  "triangles": 14512,
+  "method": "Welded connected manifold shells, winding, non-adjacent triangle overlap, pairwise axis separation and owner surface rays.",
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2148,
+        "geometryVertices": 1076,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 191.284646,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 3584,
+        "geometryVertices": 1794,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 96.366167,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1116,
+        "geometryVertices": 560,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.027993,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 1116,
+        "geometryVertices": 560,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.027993,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 1976,
+        "geometryVertices": 990,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 12.44349,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 34.80443,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 34.80443,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1148,
+        "geometryVertices": 576,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.691084,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.049999
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.028809
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 0.028809
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 4.295608
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 0.618119
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "axisGap": 0.618119
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "axisGap": 0.371
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 5.179984
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 5.179984
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.044603
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.039
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "axisGap": 0.039
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "axisGap": 0.056
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 2.321347
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 9.425593
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "axisGap": 3.067732
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 9.425593
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "axisGap": 3.067732
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 0.154225
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "axisGap": 0.154225
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "axisGap": 5.033
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "axisGap": 4.286
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "axisGap": 0.1782
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "axisGap": 2.136
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "ownerId": 1,
+        "blockingPartId": 5,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 1.006
+      },
+      {
+        "boltId": 4,
+        "ownerId": 1,
+        "blockingPartId": 6,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 1.006
+      }
+    ],
+    "otherMountsVisibleAlongOwnAxes": 19
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2148,
+        "geometryVertices": 1076,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 191.284646,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 3584,
+        "geometryVertices": 1794,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 96.366167,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1116,
+        "geometryVertices": 560,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.027993,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 1116,
+        "geometryVertices": 560,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.027993,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 1976,
+        "geometryVertices": 990,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 12.44349,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 34.80443,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 34.80443,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1148,
+        "geometryVertices": 576,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.691084,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.049999
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.028809
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 0.028809
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 4.295608
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 0.618119
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "axisGap": 0.618119
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "axisGap": 0.371
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 5.179984
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 5.179984
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.044603
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.039
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "axisGap": 0.039
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "axisGap": 0.056
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 2.321347
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 9.425593
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "axisGap": 3.067732
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 9.425593
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "axisGap": 5.748104
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "axisGap": 3.067732
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 0.154225
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "axisGap": 0.154225
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "axisGap": 5.033
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "axisGap": 4.286
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "axisGap": 0.1782
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "axisGap": 2.136
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "ownerId": 1,
+        "blockingPartId": 5,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 1.006
+      },
+      {
+        "boltId": 4,
+        "ownerId": 1,
+        "blockingPartId": 6,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 1.006
+      }
+    ],
+    "otherMountsVisibleAlongOwnAxes": 19,
+    "poses": "passed",
+    "hierarchy": "passed"
+  },
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}

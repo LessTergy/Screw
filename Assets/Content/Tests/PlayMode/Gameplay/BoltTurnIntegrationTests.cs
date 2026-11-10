@@ -92,7 +92,7 @@ namespace Screw.Tests.Gameplay
             var initialAttachments = coordinator.Attempt.RemainingBoltsByPart[0];
             Time.timeScale = 0f;
             var task = coordinator.PlayAsync(0).AsTask();
-            var turn = coordinator.Attempt.CurrentTurn;
+            var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
             Assert.That(coordinator.Attempt.RemainingBoltsByPart[0], Is.EqualTo(initialAttachments));
             Assert.That(_collection.Containers[0].Count, Is.Zero);
@@ -110,8 +110,8 @@ namespace Screw.Tests.Gameplay
             Assert.That(bolt.position, Is.EqualTo(flightPosition), "In-flight bolt must no longer inherit assembly rotation.");
             Assert.That(_scope.SceneCamera.transform.position, Is.EqualTo(cameraPosition));
             Assert.That(Quaternion.Angle(cameraRotation, _scope.SceneCamera.transform.rotation), Is.LessThan(0.01f));
-            var rejected = coordinator.PlayAsync(1).GetAwaiter().GetResult();
-            Assert.That(rejected.Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+            var repeated = coordinator.PlayAsync(0).GetAwaiter().GetResult();
+            Assert.That(repeated.Outcome, Is.EqualTo(BoltReservationOutcome.AlreadyReserved));
             Time.timeScale = 1f;
             yield return Finish(task);
             Assert.That(bolt.GetInstanceID(), Is.EqualTo(id));
@@ -147,9 +147,9 @@ namespace Screw.Tests.Gameplay
                     input.BeginPointer(-1, point);
                     input.UpdatePointer(-1, point, true);
                     var attempt = _scope.GameplaySession.Attempt;
-                    Assert.That(attempt.CurrentTurn, Is.Not.Null, "Recorded pointer did not start a turn for " + step.BoltId);
-                    Assert.That(attempt.CurrentTurn.BoltId, Is.EqualTo(step.BoltId));
-                    var turn = attempt.CurrentTurn;
+                    Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.Not.Null, "Recorded pointer did not start a turn for " + step.BoltId);
+                    Assert.That(attempt.ActiveTurns.Values.SingleOrDefault().BoltId, Is.EqualTo(step.BoltId));
+                    var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                     yield return FinishReleasedTurn(attempt, turn);
                     var expected = reference.ReserveBolt(step.BoltId).Turn;
                     Assert.That(reference.ConfirmDetachment(expected), Is.True);
@@ -186,6 +186,66 @@ namespace Screw.Tests.Gameplay
         }
 
         [UnityTest]
+        public IEnumerator RapidPointerBurstsCompleteTheLevelWhileSeveralReleasedPartsRemainVisible()
+        {
+            _scope.GameplaySession.enabled = true;
+            var view = _scope.LevelView;
+            var attempt = _scope.GameplaySession.Attempt;
+            var route = LevelRouteData.Read(File.ReadAllText(LevelRouteData.LevelOnePath), view.ReadSource());
+            var camera = _scope.SceneCamera;
+            var input = camera.GetComponent<OrbitCamera>();
+            camera.aspect = route.Camera.Aspect;
+            camera.fieldOfView = route.Camera.FieldOfViewDegrees;
+            input.FrameLevel();
+            var supported = new List<Rigidbody>();
+            for (var batch = 0; batch < 3; batch++)
+            {
+                Time.timeScale = 0f;
+                foreach (var step in route.Steps.Skip(batch * 3).Take(3))
+                {
+                    var angles = LevelRouteData.Vector(step.LevelEulerDegrees);
+                    input.Rotate(new Vector2(angles.y - input.Yaw, angles.x - input.Pitch));
+                    Vector2 point = camera.ViewportToScreenPoint(new Vector3(step.ViewportPoint[0], step.ViewportPoint[1], 0f));
+                    input.BeginPointer(-1, point);
+                    input.UpdatePointer(-1, point, true);
+                    Assert.That(attempt.ActiveTurns.ContainsKey(step.BoltId), Is.True, "Tap was rejected for bolt " + step.BoltId);
+                    Assert.That(attempt.ActiveTurns[step.BoltId].Phase, Is.EqualTo(TurnPhase.Reserved));
+                }
+
+                Assert.That(attempt.ActiveTurns.Count, Is.GreaterThanOrEqualTo(3));
+                Time.timeScale = 1f;
+                var expected = (batch + 1) * 3;
+                yield return Wait(() => attempt.DetachedBoltIds.Count == expected, "Burst did not withdraw all three bolts.");
+                if (batch < 2)
+                {
+                    var body = view.GetPart(batch).Node.GetComponent<Rigidbody>();
+                    Assert.That(body.isKinematic, Is.False);
+                    body.isKinematic = true;
+                    body.position += Vector3.left * 30f;
+                    supported.Add(body);
+                    Physics.SyncTransforms();
+                }
+            }
+
+            Assert.That(supported.Count(body => body != null), Is.EqualTo(2));
+            Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            Assert.That(attempt.DetachedBoltIds.Distinct().Count(), Is.EqualTo(9));
+            foreach (var body in supported)
+            {
+                body.isKinematic = false;
+                body.WakeUp();
+            }
+
+            yield return Wait(() => attempt.Status == AttemptStatus.Won, "All operations and released parts did not finish.");
+            Assert.That(attempt.ActiveTurns, Is.Empty);
+            Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo(9));
+            Assert.That(view.Parts.All(part => part.Node == null), Is.True);
+            AssertStableVisualState(attempt);
+            AssertMaterialsAndIdentity(attempt);
+            AssertResult("Победа!");
+        }
+
+        [UnityTest]
         public IEnumerator RealPoolFlightsReplayEveryChainedReplacementInLogicalOrder()
         {
             var view = _scope.LevelView;
@@ -207,7 +267,7 @@ namespace Screw.Tests.Gameplay
                 yield return PlayAndFinish(coordinator, 0);
                 yield return PlayAndFinish(coordinator, 1);
                 var task = coordinator.PlayAsync(2).AsTask();
-                var turn = attempt.CurrentTurn;
+                var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 var sawOriginalFull = false;
                 var sawNextGroup = false;
                 var deadline = Time.realtimeSinceStartup + 10f;
@@ -257,7 +317,7 @@ namespace Screw.Tests.Gameplay
             Vector2 point = _scope.SceneCamera.WorldToScreenPoint(_scope.LevelView.GetBolt(0).Node.GetComponent<Collider>().bounds.center);
             input.BeginPointer(-1, point);
             input.UpdatePointer(-1, point, true);
-            yield return Wait(() => oldScope.GameplaySession.Attempt.CurrentTurn.Phase == TurnPhase.InTransit,
+            yield return Wait(() => oldScope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault().Phase == TurnPhase.InTransit,
                 "Flight did not begin.");
             _scope.Container.Resolve<SceneNavigator>().RestartGameplay();
             yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
@@ -266,19 +326,19 @@ namespace Screw.Tests.Gameplay
             BindScope();
             Assert.That(oldBolts.All(bolt => bolt == null), Is.True);
             Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
-            Assert.That(_scope.GameplaySession.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_scope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             AssertMaterialsAndIdentity(_scope.GameplaySession.Attempt);
             AssertStableVisualState(_scope.GameplaySession.Attempt);
         }
 
         [UnityTest]
-        public IEnumerator PendingRemovalRejectsRealTapsAllowsDragAndCancelsOnSceneRestart()
+        public IEnumerator PendingRemovalAcceptsRealTapsAllowsDragAndCancelsOnSceneRestart()
         {
             var coordinator = _scope.GameplaySession.Coordinator;
             yield return Finish(coordinator.PlayAsync(0).AsTask());
             yield return Finish(coordinator.PlayAsync(1).AsTask());
             var task = coordinator.PlayAsync(2).AsTask();
-            var turn = coordinator.Attempt.CurrentTurn;
+            var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             yield return Wait(() => turn.Phase == TurnPhase.InTransit, "Part did not release.");
             var part = _scope.LevelView.GetPart(0).Node;
             part.GetComponent<Rigidbody>().isKinematic = true;
@@ -313,8 +373,10 @@ namespace Screw.Tests.Gameplay
             }
 
             selection.Selected -= onSelected;
-            Assert.That(selections, Is.EqualTo(20), "The repeated taps must hit an actual available head.");
-            Assert.That(coordinator.Attempt.CurrentTurn, Is.SameAs(turn));
+            Assert.That(selections, Is.EqualTo(1), "Accepted withdrawal disables the head collider immediately.");
+            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 2, 3 }));
+            var nextTurn = coordinator.Attempt.ActiveTurns[3];
+            Assert.That(nextTurn.Phase, Is.EqualTo(TurnPhase.Reserved));
             CollectionAssert.AreEqual(new[] { 0, 1, 2 }, coordinator.Attempt.DetachedBoltIds);
             var levelRotation = input.LevelRoot.rotation;
             var cameraPosition = camera.transform.position;
@@ -326,7 +388,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
             Assert.That(camera.transform.rotation, Is.EqualTo(cameraRotation));
             Assert.That(part.position, Is.EqualTo(partPosition));
-            Assert.That(coordinator.Attempt.CurrentTurn, Is.SameAs(turn));
+            Assert.That(coordinator.Attempt.ActiveTurns[2], Is.SameAs(turn));
 
             var oldScope = _scope;
             _scope.Container.Resolve<SceneNavigator>().RestartGameplay();
@@ -337,7 +399,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(task.IsCompleted, Is.True);
             Assert.Throws<OperationCanceledException>(() => task.GetAwaiter().GetResult());
             Assert.That(part == null, Is.True);
-            Assert.That(_scope.GameplaySession.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_scope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
             Assert.That(_scope.LevelView.Parts.All(binding => binding.Node.parent == _scope.LevelView.ModelRoot
                 && binding.Node.GetComponent<Rigidbody>().isKinematic), Is.True);
@@ -369,7 +431,7 @@ namespace Screw.Tests.Gameplay
             input.Tapped -= onTapped;
             Assert.That(tapped, Is.Zero);
             Assert.That(input.LevelRoot.rotation, Is.EqualTo(rotation));
-            Assert.That(_scope.GameplaySession.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_scope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             yield return null;
         }
 
@@ -396,7 +458,7 @@ namespace Screw.Tests.Gameplay
 
                 Time.timeScale = phase == 0 ? 0f : 1f;
                 var task = session.PlayAsync(phase >= 2 ? 2 : 0).AsTask();
-                var turn = session.Attempt.CurrentTurn;
+                var turn = session.Attempt.ActiveTurns.Values.SingleOrDefault();
                 if (phase >= 1)
                 {
                     yield return Wait(() => turn.Phase == TurnPhase.InTransit, "Flight did not begin.");
@@ -433,7 +495,7 @@ namespace Screw.Tests.Gameplay
                 Assert.That(task.IsCompleted, Is.True);
                 Assert.Throws<OperationCanceledException>(() => task.GetAwaiter().GetResult());
                 Assert.That(oldNodes.All(node => node == null), Is.True);
-                Assert.That(_scope.GameplaySession.Attempt.CurrentTurn, Is.Null);
+                Assert.That(_scope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
                 Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
                 Assert.That(_scope.GameplaySession.Attempt.ContainerQueue, Is.EqualTo(new[] { 0 }));
                 Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
@@ -481,7 +543,7 @@ namespace Screw.Tests.Gameplay
                 for (var id = 3; id <= 7; id++)
                 {
                     var task = session.PlayAsync(id).AsTask();
-                    yield return FinishReleasedTurn(attempt, attempt.CurrentTurn);
+                    yield return FinishReleasedTurn(attempt, attempt.ActiveTurns.Values.SingleOrDefault());
                     yield return Finish(task);
                 }
 
@@ -531,7 +593,7 @@ namespace Screw.Tests.Gameplay
                     foreach (var id in new[] { 9, 6, 10, 7, 8, 0, 1 })
                     {
                         var pending = session.PlayAsync(id).AsTask();
-                        yield return FinishReleasedTurn(attempt, attempt.CurrentTurn);
+                        yield return FinishReleasedTurn(attempt, attempt.ActiveTurns.Values.SingleOrDefault());
                         yield return Finish(pending);
                     }
 
@@ -540,7 +602,7 @@ namespace Screw.Tests.Gameplay
                     Assert.That(_collection.PoolCount, Is.EqualTo(5));
                     Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
                     var task = session.PlayAsync(2).AsTask();
-                    var turn = attempt.CurrentTurn;
+                    var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                     yield return Wait(() => turn.Phase == TurnPhase.AwaitingCompletion, "Rescue did not begin sorting.");
                     var transfers = turn.SortingSteps.OfType<PoolTransfer>().ToArray();
                     CollectionAssert.AreEqual(new[] { 6, 7, 8, 9, 10 }, transfers.Select(step => step.BoltId));
@@ -658,7 +720,7 @@ namespace Screw.Tests.Gameplay
         private IEnumerator PlayAndFinish(TurnCoordinator coordinator, int boltId)
         {
             var task = coordinator.PlayAsync(boltId).AsTask();
-            yield return FinishReleasedTurn(coordinator.Attempt, coordinator.Attempt.CurrentTurn);
+            yield return FinishReleasedTurn(coordinator.Attempt, coordinator.Attempt.ActiveTurns.Values.SingleOrDefault());
             yield return Finish(task);
         }
 
@@ -684,7 +746,7 @@ namespace Screw.Tests.Gameplay
                         break;
                     }
 
-                    Assert.That(attempt.CurrentTurn, Is.SameAs(turn), "A visible part must keep its turn locked.");
+                    Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(turn), "A visible part must keep its turn locked.");
                     Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active), "Victory must wait for actual removal.");
                     input.Rotate(new Vector2(pose.x - input.Yaw, pose.y - input.Pitch));
                     yield return new WaitForSeconds(0.8f);
@@ -693,7 +755,7 @@ namespace Screw.Tests.Gameplay
                 yield return Wait(() => part == null, "Released part did not exit after the recorded release motion.");
             }
 
-            yield return Wait(() => attempt.CurrentTurn == null, "Production turn did not finish.");
+            yield return Wait(() => attempt.ActiveTurns.Values.SingleOrDefault() == null, "Production turn did not finish.");
         }
 
         private IEnumerator LoadGameplay()

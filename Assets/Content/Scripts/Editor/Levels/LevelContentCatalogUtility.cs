@@ -121,11 +121,17 @@ namespace Screw.Editor.Levels
 
         public static void ValidateReferences(LevelContentCatalog content)
         {
+            ValidateReferences(content, draftLevel: null);
+        }
+
+        internal static void ValidateReferences(LevelContentCatalog content, int? draftLevel)
+        {
+            var requireCampaignPaths = !draftLevel.HasValue;
             Require(content != null && content.SourceCatalog != null, "Source catalog reference is missing.");
             var source = LevelDataReader.ReadCatalog(content.SourceCatalog.text);
             Require(content.Levels.Count == source.Levels.Length && content.Palette.Count == source.BoltPalette.Length,
                 "Content reference counts do not match the source catalog.");
-            Require(AssetDatabase.GetAssetPath(content.SourceCatalog) == ContentRoot + "/Data/catalog.json",
+            Require(!requireCampaignPaths || AssetDatabase.GetAssetPath(content.SourceCatalog) == ContentRoot + "/Data/catalog.json",
                 "Content catalog must reference the current imported source catalog.");
             var rawCatalog = JObject.Parse(content.SourceCatalog.text);
             var numbers = new HashSet<int>();
@@ -133,14 +139,17 @@ namespace Screw.Editor.Levels
             {
                 Require(entry != null && entry.Data != null && entry.Prefab != null, "Level asset reference is missing.");
                 Require(numbers.Add(entry.Number), "Duplicate level asset number.");
-                Require(AssetDatabase.GetAssetPath(entry.Data) == LevelDataPath(entry.Number)
-                    && AssetDatabase.GetAssetPath(entry.Prefab) == LevelPrefabPath(entry.Number), "Level asset paths do not match their number.");
+                Require(!requireCampaignPaths || (AssetDatabase.GetAssetPath(entry.Data) == LevelDataPath(entry.Number)
+                    && AssetDatabase.GetAssetPath(entry.Prefab) == LevelPrefabPath(entry.Number)), "Level asset paths do not match their number.");
                 var level = LevelDataReader.ReadLevel(entry.Data.text, source.SchemaVersion);
                 Require(level.Number == entry.Number, "Referenced JSON has a different level number.");
                 var sourceToken = rawCatalog["levels"].Single(item => (int)item["number"] == entry.Number);
                 Require(JToken.DeepEquals(sourceToken, JObject.Parse(entry.Data.text)),
                     "Catalog and separate JSON differ for level " + entry.Number + ".");
-                ValidateLevelPrefab(level, entry.Prefab);
+                if (requireCampaignPaths || entry.Number == draftLevel)
+                {
+                    ValidateLevelPrefab(level, entry.Prefab);
+                }
             }
 
             var indices = new HashSet<int>();

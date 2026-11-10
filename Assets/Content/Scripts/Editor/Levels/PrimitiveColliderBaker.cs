@@ -15,9 +15,11 @@ namespace Screw.Editor.Levels
     public static class PrimitiveColliderBaker
     {
         public const string GeneratedRootName = "_GeneratedPrimitiveColliders";
-        public const int DefaultMaxBoxes = 15;
-        public const float DefaultMinimumCoverage = 0.9f;
+        public const int DefaultResolution = 32;
+        public const int DefaultMaxBoxes = 30;
+        public const float DefaultMinimumCoverage = 0.85f;
         public const float DefaultSurfaceInset = 0.005f;
+        public const float DefaultCoverageStep = 0.05f;
         public const string PhysicsMaterialPath = "Assets/Content/Settings/LevelPartsPhysics.physicMaterial";
         private const float Guard = 0.000002f;
         private const float WorldClearance = 0.0001f;
@@ -25,13 +27,12 @@ namespace Screw.Editor.Levels
         [MenuItem("Tools/Screw/Levels/Bake Selected Model Colliders")]
         public static void BakeSelected()
         {
-            var path = AssetDatabase.GetAssetPath(Selection.activeObject);
-            Debug.Log("Baked " + BakePrefab(path) + " primitive colliders in " + path);
+            ColliderBatchUtility.PrepareSelected();
         }
 
-        public static int BakePrefab(string path, int resolution = 24, int maxBoxes = DefaultMaxBoxes,
+        public static int BakePrefab(string path, int resolution = DefaultResolution, int maxBoxes = DefaultMaxBoxes,
             float minimumCoverage = DefaultMinimumCoverage, bool replaceExisting = false,
-            float surfaceInset = DefaultSurfaceInset)
+            float surfaceInset = DefaultSurfaceInset, float coverageStep = DefaultCoverageStep)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || string.IsNullOrEmpty(path)
                 || !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)
@@ -40,7 +41,16 @@ namespace Screw.Editor.Levels
                 throw new ArgumentException("Select a model prefab asset outside Play Mode.", nameof(path));
             }
 
+            ValidateParameters(resolution, maxBoxes, minimumCoverage, surfaceInset, coverageStep);
             var root = PrefabUtility.LoadPrefabContents(path);
+            var report = new JObject
+            {
+                ["prefab"] = path, ["utc"] = DateTime.UtcNow.ToString("O"),
+                ["maxBoxes"] = maxBoxes, ["requestedCoverage"] = minimumCoverage,
+                ["resolution"] = resolution, ["coverageStep"] = coverageStep,
+                ["surfaceInset"] = surfaceInset, ["parts"] = new JArray(),
+                ["preservedManualParts"] = new JArray(), ["saved"] = false
+            };
             try
             {
                 var plans = new List<(MeshFilter Filter, PrimitiveColliderBakeResult Result)>();
@@ -52,13 +62,14 @@ namespace Screw.Editor.Levels
                         || !collider.transform.IsChildOf(generated))
                         || filter.transform.parent != null && filter.transform.parent.GetComponentsInParent<Collider>(true).Length != 0)
                     {
+                        ((JArray)report["preservedManualParts"]).Add(filter.name);
                         continue;
                     }
 
                     try
                     {
                         var result = Analyze(filter.sharedMesh, resolution, maxBoxes, minimumCoverage, surfaceInset,
-                            reduceCoverageToFit: true);
+                            reduceCoverageToFit: true, coverageStep: coverageStep);
                         var matrix = filter.transform.localToWorldMatrix;
                         var x = (Vector3)matrix.GetColumn(0);
                         var y = (Vector3)matrix.GetColumn(1);
@@ -151,11 +162,34 @@ namespace Screw.Editor.Levels
                     var actual = plan.Filter.transform.Find(GeneratedRootName).GetComponentsInChildren<BoxCollider>()
                         .Select(collider => new Bounds(collider.center, collider.size)).ToArray();
                     var covered = plan.Result.CountCovered(actual);
-                    var target = SelectCoverageTarget(covered, plan.Result.InteriorCells, minimumCoverage, true);
+                    var target = SelectCoverageTarget(covered, plan.Result.InteriorCells, minimumCoverage, true, coverageStep);
                     if (target <= 0f || covered < Mathf.CeilToInt(plan.Result.InteriorCells * target))
                     {
                         throw new InvalidOperationException("Cross-part clipping left insufficient coverage for "
                             + plan.Filter.name + ". Prefab was not changed.");
+                    }
+
+                    ((JArray)report["parts"]).Add(new JObject
+                    {
+                        ["part"] = plan.Filter.name, ["boxes"] = actual.Length,
+                        ["interiorSamples"] = plan.Result.InteriorCells, ["coveredSamples"] = covered,
+                        ["coverage"] = (float)covered / plan.Result.InteriorCells, ["selectedTarget"] = target,
+                        ["insideSourceValidated"] = true
+                    });
+                }
+
+                Physics.SyncTransforms();
+                for (var i = 0; i < accepted.Count; i++)
+                {
+                    for (var j = i + 1; j < accepted.Count; j++)
+                    {
+                        var a = accepted[i];
+                        var b = accepted[j];
+                        if (Physics.ComputePenetration(a, a.transform.position, a.transform.rotation,
+                            b, b.transform.position, b.transform.rotation, out _, out var distance) && distance > 0.00001f)
+                        {
+                            throw new InvalidOperationException("Generated colliders intersect. Prefab was not changed.");
+                        }
                     }
                 }
 
@@ -165,12 +199,51 @@ namespace Screw.Editor.Levels
                     throw new InvalidOperationException("Unity did not save the collider prefab: " + path);
                 }
 
+                report["saved"] = true;
+                report["boxes"] = count;
+                report["penetrations"] = 0;
                 return count;
+            }
+            catch (Exception exception)
+            {
+                report["error"] = exception.Message;
+                throw;
             }
             finally
             {
                 PrefabUtility.UnloadPrefabContents(root);
+                var reportPath = ReportPath(path);
+                Directory.CreateDirectory(Path.GetDirectoryName(reportPath));
+                File.WriteAllText(reportPath, report.ToString());
             }
+        }
+
+        public static string ReportPath(string prefabPath)
+        {
+            return ".tools/colliders/reports/" + AssetDatabase.AssetPathToGUID(prefabPath) + ".json";
+        }
+
+        public static void ValidateTopology(Mesh mesh)
+        {
+            if (mesh == null || mesh.vertexCount < 4 || mesh.triangles.Length < 12)
+            {
+                throw new InvalidOperationException("Mesh has no closed volume.");
+            }
+
+            var size = mesh.bounds.size;
+            if (!Finite(size) || Mathf.Min(size.x, Mathf.Min(size.y, size.z)) <= 0f)
+            {
+                throw new InvalidOperationException("Mesh has no finite three-dimensional volume.");
+            }
+
+            var vertices = mesh.vertices.Select(point => Vector3.Scale(point - mesh.bounds.min,
+                new Vector3(1f / size.x, 1f / size.y, 1f / size.z))).ToArray();
+            if (vertices.Any(vertex => !Finite(vertex)))
+            {
+                throw new InvalidOperationException("Mesh has non-finite vertices.");
+            }
+
+            RequireClosed(vertices, mesh.triangles);
         }
 
         private static PhysicMaterial GetPhysicsMaterial()
@@ -192,22 +265,16 @@ namespace Screw.Editor.Levels
             return material;
         }
 
-        public static PrimitiveColliderBakeResult Analyze(Mesh mesh, int resolution = 24, int maxBoxes = DefaultMaxBoxes,
+        public static PrimitiveColliderBakeResult Analyze(Mesh mesh, int resolution = DefaultResolution, int maxBoxes = DefaultMaxBoxes,
             float minimumCoverage = DefaultMinimumCoverage, float surfaceInset = DefaultSurfaceInset,
-            bool reduceCoverageToFit = false)
+            bool reduceCoverageToFit = false, float coverageStep = DefaultCoverageStep)
         {
             if (mesh == null)
             {
                 throw new ArgumentNullException(nameof(mesh));
             }
 
-            if (resolution < 4 || resolution > 64 || maxBoxes < 1 || maxBoxes > 256
-                || !(minimumCoverage > 0f && minimumCoverage <= 1f)
-                || !(surfaceInset >= 0f && surfaceInset < 0.5f))
-            {
-                throw new ArgumentOutOfRangeException("Invalid resolution, collider budget, interior coverage, or surface inset.");
-            }
-
+            ValidateParameters(resolution, maxBoxes, minimumCoverage, surfaceInset, coverageStep);
             var vertices = mesh.vertices;
             var indices = mesh.triangles;
             if (vertices.Length < 4 || indices.Length < 12 || vertices.Any(vertex => !Finite(vertex)))
@@ -354,7 +421,7 @@ namespace Screw.Editor.Levels
                 }
             }
 
-            var targetCoverage = SelectCoverageTarget(covered, total, minimumCoverage, reduceCoverageToFit);
+            var targetCoverage = SelectCoverageTarget(covered, total, minimumCoverage, reduceCoverageToFit, coverageStep);
             if (targetCoverage <= 0f || covered < Mathf.CeilToInt(total * targetCoverage))
             {
                 throw new InvalidOperationException("CoACD budget/coverage rejected: " + covered + "/" + total
@@ -374,12 +441,23 @@ namespace Screw.Editor.Levels
             return new PrimitiveColliderBakeResult(Array.AsReadOnly(localBoxes), rotation, samples, covered, targetCoverage);
         }
 
-        private static float SelectCoverageTarget(int covered, int total, float requested, bool reduceCoverageToFit)
+        public static void ValidateParameters(int resolution, int maxBoxes, float minimumCoverage, float surfaceInset, float coverageStep)
+        {
+            if (resolution < 4 || resolution > 64 || maxBoxes < 1 || maxBoxes > 256
+                || !(minimumCoverage > 0f && minimumCoverage <= 1f)
+                || !(surfaceInset >= 0f && surfaceInset < 0.5f)
+                || !(coverageStep >= 0.00001f && coverageStep <= 1f))
+            {
+                throw new ArgumentOutOfRangeException("Invalid resolution, collider budget, interior coverage, surface inset, or coverage step.");
+            }
+        }
+
+        private static float SelectCoverageTarget(int covered, int total, float requested, bool reduceCoverageToFit, float coverageStep)
         {
             var target = requested;
             for (var step = 1; reduceCoverageToFit && target > 0f && covered < Mathf.CeilToInt(total * target); step++)
             {
-                target = (float)Math.Round(requested - step * 0.05d, 5);
+                target = (float)Math.Round(requested - step * (double)coverageStep, 5);
             }
 
             return target;

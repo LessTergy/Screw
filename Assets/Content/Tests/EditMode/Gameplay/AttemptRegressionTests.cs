@@ -157,7 +157,7 @@ namespace Screw.Tests.Gameplay
             AttemptTestSteps.AssertConservation(attempt);
             Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Won));
             Assert.That(attempt.IsVictoryReady, Is.True);
-            Assert.That(attempt.CurrentTurn, Is.Null);
+            Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(attempt.Reservations, Is.Empty);
             Assert.That(attempt.PoolCount, Is.Zero);
             Assert.That(attempt.ContainerQueue, Is.Empty);

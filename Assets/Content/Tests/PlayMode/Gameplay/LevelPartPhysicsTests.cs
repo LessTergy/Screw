@@ -135,7 +135,7 @@ namespace Screw.Tests.Gameplay
             var neighbors = view.Parts.Skip(1).Select(part => part.Node).ToArray();
             var neighborPositions = neighbors.Select(node => node.position).ToArray();
             var neighborRotations = neighbors.Select(node => node.rotation).ToArray();
-            var pinnedBolts = view.Bolts.Skip(3).Select(bolt => bolt.Node).ToArray();
+            var pinnedBolts = view.Bolts.Skip(4).Select(bolt => bolt.Node).ToArray();
             var boltPositions = pinnedBolts.Select(node => node.position).ToArray();
             for (var id = 0; id < 2; id++)
             {
@@ -145,7 +145,7 @@ namespace Screw.Tests.Gameplay
 
             Time.timeScale = 0f;
             var task = coordinator.PlayAsync(2).AsTask();
-            var turn = coordinator.Attempt.CurrentTurn;
+            var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             yield return null;
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
             AssertPinned(owner, position, rotation);
@@ -162,10 +162,13 @@ namespace Screw.Tests.Gameplay
             body.isKinematic = true;
             yield return new WaitForSeconds(1.1f);
             Assert.That(owner != null, Is.True, "A visible part must not expire after one second.");
-            Assert.That(task.IsCompleted, Is.False, "Sorting must not unlock a turn while its part remains visible.");
-            Assert.That(coordinator.Attempt.CurrentTurn, Is.SameAs(turn));
+            Assert.That(task.IsCompleted, Is.False, "The released part still has its own pending removal.");
+            Assert.That(coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(turn));
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.AwaitingCompletion));
-            Assert.That(coordinator.PlayAsync(3).GetAwaiter().GetResult().Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+            var next = coordinator.PlayAsync(3).AsTask();
+            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 2, 3 }));
+            yield return Finish(next);
+            Assert.That(owner != null && !task.IsCompleted, Is.True);
             owner.position += Vector3.down * 100f;
             Physics.SyncTransforms();
             yield return Finish(task);
@@ -340,7 +343,7 @@ namespace Screw.Tests.Gameplay
                 var owner = _fixtureView.GetPart(0).Node;
                 var neighbor = _fixtureView.GetPart(1).Node;
                 var task = coordinator.PlayAsync(6).AsTask();
-                var turn = attempt.CurrentTurn;
+                var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 Assert.That(turn.Destination.IsPool, Is.True);
                 yield return Wait(() => turn.Phase == TurnPhase.InTransit);
                 Assert.That(owner.GetComponent<Rigidbody>().isKinematic, Is.False);
@@ -357,7 +360,7 @@ namespace Screw.Tests.Gameplay
         }
 
         [UnityTest]
-        public IEnumerator SupportedPartKeepsTurnLockedUntilRotationLetsItFall()
+        public IEnumerator SupportedPartAllowsAnotherBoltBeforeRotationLetsItFall()
         {
             var attempt = CreateFixture(false);
             var owner = _fixtureView.GetPart(0).Node;
@@ -366,7 +369,7 @@ namespace Screw.Tests.Gameplay
             using (var coordinator = new TurnCoordinator(attempt, _scope.GetComponent<BoltTurnOperations>()))
             {
                 var task = coordinator.PlayAsync(6).AsTask();
-                var turn = attempt.CurrentTurn;
+                var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 yield return Wait(() => turn.Phase == TurnPhase.AwaitingCompletion);
                 for (var step = 0; step < 150; step++)
                 {
@@ -376,19 +379,16 @@ namespace Screw.Tests.Gameplay
                 Assert.That(contacts.Contacts.Contains(neighbor.GetComponent<Collider>()), Is.True);
                 yield return new WaitForSeconds(1.2f);
                 Assert.That(owner != null && !task.IsCompleted, Is.True);
-                Assert.That(attempt.CurrentTurn, Is.SameAs(turn));
-                for (var index = 0; index < 20; index++)
-                {
-                    Assert.That(coordinator.PlayAsync(0).GetAwaiter().GetResult().Outcome,
-                        Is.EqualTo(BoltReservationOutcome.TurnInProgress));
-                }
+                Assert.That(attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(turn));
+                var next = coordinator.PlayAsync(0).AsTask();
+                Assert.That(attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 6, 0 }));
+                yield return Finish(next);
+                Assert.That(owner != null && !task.IsCompleted, Is.True);
 
                 _fixtureView.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
                 yield return Finish(task);
-                Assert.That(owner == null && attempt.CurrentTurn == null, Is.True);
+                Assert.That(owner == null && attempt.ActiveTurns.Values.SingleOrDefault() == null, Is.True);
                 yield return null;
-                CollectionAssert.AreEqual(new[] { 6 }, attempt.DetachedBoltIds, "Blocked input must not run after unlock.");
-                yield return Finish(coordinator.PlayAsync(0).AsTask());
                 CollectionAssert.AreEqual(new[] { 6, 0 }, attempt.DetachedBoltIds);
             }
         }
@@ -410,7 +410,7 @@ namespace Screw.Tests.Gameplay
                 }
 
                 var task = coordinator.PlayAsync(10).AsTask();
-                var turn = attempt.CurrentTurn;
+                var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 AssertPinned(owner, position, rotation);
                 yield return Wait(() => turn.Phase == TurnPhase.InTransit);
                 Assert.That(turn.ReleasedPartId, Is.EqualTo(0));

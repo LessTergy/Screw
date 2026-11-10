@@ -1,0 +1,289 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "6b49363edcb594e655fb81588d3c5caefb70eb5b150dc1b994d12f7e33ff5602",
+  "parts": 5,
+  "anchors": 12,
+  "triangles": 908,
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "method": "Welded manifold shell, oriented triangle winding, convex hull boundary and area/volume. Pairwise separated AABBs and nearest outward owner surface for every marker.",
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 38.657057,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 181.299801,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 35.0397,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 24.383424,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 24.383424,
+        "convexBoundary": "passed",
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.44
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 8.92
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 8.92
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 0.45
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 0.45
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 1.95
+      }
+    ]
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 38.657057,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 181.299801,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 220,
+        "geometryVertices": 112,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 35.0397,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 24.383424,
+        "convexBoundary": "passed",
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 156,
+        "geometryVertices": 80,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 24.383424,
+        "convexBoundary": "passed",
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.44
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 8.92
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 8.92
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.05
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 0.45
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 0.45
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 1.95
+      }
+    ],
+    "poses": "passed",
+    "hierarchy": "passed"
+  },
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}

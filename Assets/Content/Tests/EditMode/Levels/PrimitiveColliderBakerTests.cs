@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Screw.Editor.Levels;
 using UnityEditor;
@@ -144,6 +146,114 @@ namespace Screw.Tests.Levels
             var result = PrimitiveColliderBaker.Analyze(mesh, reduceCoverageToFit: true);
             Assert.That(result.TargetCoverage, Is.EqualTo(0.9f));
             Assert.That(result.Boxes, Has.Count.EqualTo(1));
+        }
+
+        [TestCase(0.03f)]
+        [TestCase(0.1f)]
+        public void CustomCoverageStepControlsTheBudgetFallback(float step)
+        {
+            var mesh = Boxes((Vector3.zero, Vector3.one * 4f, false), (Vector3.zero, Vector3.one * 2f, true));
+            var result = PrimitiveColliderBaker.Analyze(mesh, 16, 1, 0.9f, 0f,
+                reduceCoverageToFit: true, coverageStep: step);
+            Assert.That(result.TargetCoverage, Is.GreaterThan(0f).And.LessThan(0.9f));
+            Assert.That((0.9f - result.TargetCoverage) / step,
+                Is.EqualTo(Mathf.Round((0.9f - result.TargetCoverage) / step)).Within(0.0001f));
+            Assert.That(result.CoveredCells, Is.GreaterThanOrEqualTo(Mathf.CeilToInt(result.InteriorCells * result.TargetCoverage)));
+            Assert.That(result.CoveredCells, Is.LessThan(Mathf.CeilToInt(result.InteriorCells * (result.TargetCoverage + step))));
+        }
+
+        [TestCase(0f)]
+        [TestCase(-0.01f)]
+        [TestCase(0.000001f)]
+        [TestCase(1.1f)]
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        public void InvalidCoverageStepIsRejected(float step)
+        {
+            var mesh = Boxes((Vector3.zero, Vector3.one, false));
+            Assert.Throws<ArgumentOutOfRangeException>(() => PrimitiveColliderBaker.Analyze(mesh, coverageStep: step));
+        }
+
+        [Test]
+        public void LevelAndViewResolveTheSharedModelWhileReviewCopiesStayIndependent()
+        {
+            var mesh = Boxes((Vector3.zero, Vector3.one, false));
+            var model = new GameObject("Model");
+            _objects.Add(model);
+            model.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var modelPath = SaveFixture(model, mesh);
+            var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+            var level = new GameObject("Level");
+            _objects.Add(level);
+            var assembly = new GameObject("Assembly");
+            assembly.transform.SetParent(level.transform, false);
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset, assembly.transform);
+            instance.name = "Model";
+            var levelPath = "Assets/__ColliderLevel_" + Guid.NewGuid().ToString("N") + ".prefab";
+            _assets.Add(levelPath);
+            var levelAsset = PrefabUtility.SaveAsPrefabAsset(level, levelPath);
+
+            var wrapper = new GameObject("View");
+            _objects.Add(wrapper);
+            var view = wrapper.AddComponent<Screw.Levels.LevelView>();
+            var levelInstance = (GameObject)PrefabUtility.InstantiatePrefab(levelAsset, wrapper.transform);
+            using (var serialized = new SerializedObject(view))
+            {
+                serialized.FindProperty("_levelRoot").objectReferenceValue = levelInstance.transform;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+            var viewPath = "Assets/__ColliderView_" + Guid.NewGuid().ToString("N") + ".prefab";
+            _assets.Add(viewPath);
+            var viewAsset = PrefabUtility.SaveAsPrefabAsset(wrapper, viewPath);
+            var copyPath = "Assets/__ColliderCopy_" + Guid.NewGuid().ToString("N") + ".prefab";
+            _assets.Add(copyPath);
+            Assert.That(AssetDatabase.CopyAsset(modelPath, copyPath), Is.True);
+
+            Assert.That(ColliderBatchUtility.ResolveModelPath(modelAsset), Is.EqualTo(modelPath));
+            Assert.That(ColliderBatchUtility.ResolveModelPath(levelAsset), Is.EqualTo(modelPath));
+            Assert.That(ColliderBatchUtility.ResolveModelPath(viewAsset), Is.EqualTo(modelPath));
+            Assert.That(ColliderBatchUtility.ResolveModelPath(AssetDatabase.LoadAssetAtPath<GameObject>(copyPath)), Is.EqualTo(copyPath));
+        }
+
+        [Test]
+        public void BatchForwardsCustomParametersAndRejectsInvalidSettingsBeforeChangingAssets()
+        {
+            var mesh = Boxes((Vector3.zero, Vector3.one, false));
+            var model = new GameObject("CustomColliderParameters");
+            _objects.Add(model);
+            model.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var path = SaveFixture(model, mesh);
+            var reportPath = ColliderBatchUtility.BatchReportPath;
+            var previousReport = File.Exists(reportPath) ? File.ReadAllBytes(reportPath) : null;
+            try
+            {
+                ColliderBatchUtility.Run(new[] { path }, resolution: 12, maxBoxes: 2,
+                    minimumCoverage: 0.85f, surfaceInset: 0.001f, coverageStep: 0.03f);
+                var batch = JArray.Parse(File.ReadAllText(reportPath));
+                Assert.That((string)batch[0]["status"], Is.EqualTo("prepared"));
+                var report = JObject.Parse(File.ReadAllText(PrimitiveColliderBaker.ReportPath(path)));
+                Assert.That((int)report["resolution"], Is.EqualTo(12));
+                Assert.That((int)report["maxBoxes"], Is.EqualTo(2));
+                Assert.That((float)report["requestedCoverage"], Is.EqualTo(0.85f));
+                Assert.That((float)report["surfaceInset"], Is.EqualTo(0.001f));
+                Assert.That((float)report["coverageStep"], Is.EqualTo(0.03f));
+                var prefabBytes = File.ReadAllBytes(path);
+                var reportBytes = File.ReadAllBytes(reportPath);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ColliderBatchUtility.Run(new[] { path }, coverageStep: 0f));
+                Assert.That(File.ReadAllBytes(path), Is.EqualTo(prefabBytes));
+                Assert.That(File.ReadAllBytes(reportPath), Is.EqualTo(reportBytes));
+            }
+            finally
+            {
+                if (previousReport == null)
+                {
+                    File.Delete(reportPath);
+                }
+                else
+                {
+                    File.WriteAllBytes(reportPath, previousReport);
+                }
+            }
         }
 
         [TestCase(-0.1f)]
@@ -330,6 +440,12 @@ namespace Screw.Tests.Levels
             Assert.That(savedPart.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(mesh));
             Assert.That(savedPart.Find(PrimitiveColliderBaker.GeneratedRootName).childCount, Is.EqualTo(1));
             Assert.That(once.isValid, Is.True);
+            var report = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(PrimitiveColliderBaker.ReportPath(path)));
+            Assert.That((bool)report["saved"], Is.True);
+            Assert.That((int)report["penetrations"], Is.Zero);
+            Assert.That((int)report["parts"][0]["boxes"], Is.EqualTo(1));
+            Assert.That((float)report["parts"][0]["coverage"], Is.GreaterThanOrEqualTo((float)report["parts"][0]["selectedTarget"]));
+            Assert.That((bool)report["parts"][0]["insideSourceValidated"], Is.True);
         }
 
         [Test]
@@ -434,6 +550,9 @@ namespace Screw.Tests.Levels
             Assert.Throws<InvalidOperationException>(() => PrimitiveColliderBaker.BakePrefab(path));
             Assert.That(AssetDatabase.GetAssetDependencyHash(path), Is.EqualTo(before));
             Assert.That(AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponentsInChildren<Collider>(true), Is.Empty);
+            var report = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(PrimitiveColliderBaker.ReportPath(path)));
+            Assert.That((bool)report["saved"], Is.False);
+            Assert.That((string)report["error"], Is.Not.Empty);
         }
 
         private string SaveFixture(GameObject root, Mesh mesh)

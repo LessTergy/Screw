@@ -9,6 +9,7 @@ namespace Screw.Gameplay
         private readonly ITurnOperations _operations;
         private CancellationTokenSource _attemptCancellation = new CancellationTokenSource();
         private bool _disposed;
+        private UniTaskCompletionSource _sortingCompletion;
 
         public LevelAttempt Attempt { get; private set; }
 
@@ -26,6 +27,11 @@ namespace Screw.Gameplay
             var result = attempt.ReserveBolt(boltId);
             if (result.Outcome != BoltReservationOutcome.Reserved)
             {
+                if (result.Outcome == BoltReservationOutcome.PoolOverflow)
+                {
+                    _attemptCancellation.Cancel();
+                }
+
                 return result;
             }
 
@@ -45,10 +51,37 @@ namespace Screw.Gameplay
 
         private async UniTask CollectAsync(LevelAttempt attempt, AttemptTurn turn, CancellationToken token)
         {
+            await WaitForSortingAsync(token);
+            EnsureCurrent(attempt, token);
             await _operations.ArriveAsync(turn, token).AttachExternalCancellation(token);
+            await WaitForSortingAsync(token);
             EnsureCurrent(attempt, token);
             attempt.ConfirmArrival(turn);
-            await _operations.FinishAsync(turn, token).AttachExternalCancellation(token);
+            var completion = new UniTaskCompletionSource();
+            _sortingCompletion = completion;
+            try
+            {
+                await _operations.FinishAsync(turn, token).AttachExternalCancellation(token);
+            }
+            finally
+            {
+                if (ReferenceEquals(_sortingCompletion, completion))
+                {
+                    _sortingCompletion = null;
+                }
+
+                completion.TrySetResult();
+            }
+        }
+
+        private async UniTask WaitForSortingAsync(CancellationToken token)
+        {
+            while (_sortingCompletion != null)
+            {
+                await _sortingCompletion.Task.AttachExternalCancellation(token);
+            }
+
+            token.ThrowIfCancellationRequested();
         }
 
         public void Restart()
@@ -57,6 +90,7 @@ namespace Screw.Gameplay
             var previousCancellation = _attemptCancellation;
             Attempt = Attempt.Restart();
             _attemptCancellation = new CancellationTokenSource();
+            _sortingCompletion = null;
             try
             {
                 previousCancellation.Cancel();

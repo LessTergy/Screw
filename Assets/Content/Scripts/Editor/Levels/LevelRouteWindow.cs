@@ -44,7 +44,7 @@ namespace Screw.Editor.Levels
                     var scope = Object.FindFirstObjectByType<GameplayLifetimeScope>();
                     var view = scope.LevelView;
                     var route = LevelRouteData.Read(File.ReadAllText(LevelRouteData.LevelOnePath), view.ReadSource());
-                    if (scope.GameplaySession.Attempt.CurrentTurn != null
+                    if (scope.GameplaySession.Attempt.ActiveTurns.Count != 0
                         || scope.GameplaySession.Attempt.DetachedBoltIds.Count != 0)
                     {
                         throw new InvalidOperationException("Restart Gameplay before using the spatial stand.");

@@ -10,7 +10,40 @@ The installer uses `uv` and creates a project-local Python 3.12 environment:
 ./Tools/Colliders/Install.ps1
 ```
 
-Pinned dependencies: CoACD 1.0.14, NumPy 2.2.6, SciPy 1.15.3. The environment, input requests and computed results live in ignored `.tools/`. Installation preserves existing caches.
+Pinned dependencies: CoACD 1.0.14, NumPy 2.2.6, SciPy 1.15.3, PyMeshFix 0.18.1. The environment, input requests and computed results live in ignored `.tools/`. Installation preserves existing caches. PyMeshFix uses its low-level NumPy API; PyVista/VTK is not installed.
+
+## Mesh analysis and individual repair approval
+
+Mesh repair and collider generation are separate operations.
+
+1. In Project, right-click a level prefab (`Level_XX`, `Level_XX_View`) or shared model prefab and choose **Screw → Analyze Level Meshes...**. The shared model is resolved automatically. No changes are applied to it during analysis.
+2. If all mesh topology checks pass, a dialog reports no problems; no review assets or colliders are created.
+3. Otherwise, only failed parts are exported together to `repair_meshes.py`. PyMeshFix first fills boundary holes while retaining original vertices, oriented triangles and render seams. If that fails, it starts again from the original arrays and performs full repair (`fill_small_boundaries` then `clean`). Both failures are reported if no valid repair is obtained. No source model is edited by either attempt.
+4. A new folder under `Assets/Content/ModelRepairs/` contains `Review.asset`, `Report.json`, repaired mesh assets, individual `Part_N.prefab` previews and `Comparison.unity`. The report contains only problem parts. The scene contains isolated before/after pairs, not the entire level. Only repaired preview parts receive generated colliders, using the baker defaults. Cap-only repair retains source render attributes; full repair maps new triangles to source faces for material groups and maps corners to source attributes for UVs, normals, tangents and colours, retaining separate vertices at render seams. Mapping of changed surfaces is approximate: inspect textures and shading. Large reconstructed meshes use 32-bit indices when necessary.
+5. Work in the **Scene** tab, without Play Mode. The review window opens with the comparison scene; the Scene overlay button reopens it. **Показать пару** frames a pair, and **Показывать коллайдеры** toggles green wireframes of the preview boxes. Rotate the Scene view to inspect holes, caps, cavities and filling.
+6. **Применить эту деталь** approves just that pair and replaces only its MeshFilter mesh reference in the shared model prefab. The original imported mesh asset and other parts remain untouched. Existing generated colliders on that part are removed as stale; manual colliders are retained. Preview colliders are not transferred. Approval is persisted per part, and the problem-only report is updated. Failed previews, duplicate approvals and meshes changed since analysis are rejected.
+7. After approving the required repairs, run collider generation for the level separately. Reopening an existing `Comparison.unity` restores the review controls and saved per-part approvals. If any source or repaired mesh changed since analysis, run a new analysis.
+
+The repair backend uses [PyMeshFix](https://pymeshfix.pyvista.org/). Full repair may move vertices, replace/delete faces or lose connected components. The tool does not explicitly join components or discard all but the largest; `clean()` may still remove defective geometry. Mode (`cap-only`/`full`), fallback reason, triangle counts and component counts before/after are saved in the review/report. Full repairs receive a visible warning and require the same individual approval as other repairs. Closedness, non-manifold edges, winding and degeneracy are checked before import; Unity validates the imported mesh again before preview baking. Comparison assets from earlier attempts are retained and never overwritten.
+
+## Collider generation
+
+### Per-model settings window
+
+In Project, right-click one level or shared model prefab and choose **Screw → Generate Colliders...**. Set boxes per part, initial coverage (%), surface inset (%), coverage reduction step (percentage points), and analysis resolution; then click **Перегенерировать коллайдеры**. Topology problems stop generation for that model and direct you to the separate mesh-analysis command; no repair is performed automatically.
+
+Each opening starts from `PrimitiveColliderBaker` constants; **Вернуть значения по умолчанию** restores them. Settings apply to that run without changing global constants. Defaults: resolution 24, 15 boxes, 90% coverage, 0.5% inset, reduction step 5 percentage points. `DefaultCoverageStep = 0.05f` provides the step; `coverageStep` overrides it in `BakePrefab`, `Analyze`, or `ColliderBatchUtility.Run`. Reports include the actual step and resolution. Invalid/non-finite parameters are rejected before preparation.
+
+### Batch and reports
+
+**Tools → Screw → Levels → Prepare Selected Model Colliders and Report** processes selected prefab owners; **Prepare All Catalog Colliders and Report** processes catalogue models sequentially. It can be cancelled between models. Each model with topology problems is reported and skipped without repair; processing continues with the next model. `Run(paths, reviewCopiesOnly: true)` optionally bakes closed models into independent prefab copies, without creating mesh-repair comparison scenes.
+
+- `.tools/colliders/batch-report.json`: source/target, geometry problems, quality report and status/error.
+- `.tools/colliders/reports/<prefab-guid>.json`: saved status, box counts, actual interior sample coverage, selected target, inset, resolution, reduction step, containment validation and generated-box penetration check.
+- `Assets/Content/ModelRepairs/<review-folder>/Report.json`: only failed source parts, repair/preview errors, mesh/preview paths and per-part approval status.
+- `.tools/colliders/repair/<review-guid>/`: temporary mesh repair input/output arrays.
+
+Coverage measures conservative sample centres, not exact volume. Visual acceptance of repaired geometry remains a per-part user decision. Agent-driven Editor operations use Unity MCP; generation and report calculations need no per-part agent inspection.
 
 ## Bake
 

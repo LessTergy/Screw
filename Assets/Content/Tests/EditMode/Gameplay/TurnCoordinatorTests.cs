@@ -33,7 +33,7 @@ namespace Screw.Tests.Gameplay
         public void PhasesAdvanceOnlyAfterTheirOwnOperationCompletes()
         {
             var task = _coordinator.PlayAsync(0).AsTask();
-            var turn = _coordinator.Attempt.CurrentTurn;
+            var turn = _coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             var waits = _operations.Turns.Single();
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
             Assert.That(_coordinator.Attempt.RemainingBoltsByPart[0], Is.EqualTo(1));
@@ -50,14 +50,14 @@ namespace Screw.Tests.Gameplay
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.AwaitingCompletion));
             Assert.That(waits.FinishRequested, Is.True);
             Assert.That(task.IsCompleted, Is.False);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.SameAs(turn));
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(turn));
 
             waits.Finish.TrySetResult();
             Assert.That(task.IsCompleted, Is.False);
             waits.Removal.TrySetResult();
             Assert.That(Result(task).Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Completed));
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(waits.Tokens, Has.Count.EqualTo(4));
             Assert.That(waits.Tokens.All(token => token == waits.Tokens[0] && token.CanBeCanceled), Is.True);
             AttemptTestSteps.AssertConservation(_coordinator.Attempt);
@@ -67,18 +67,23 @@ namespace Screw.Tests.Gameplay
         [TestCase(1)]
         [TestCase(2)]
         [TestCase(3)]
-        public void RepeatedInputIsRejectedInEveryPhaseAndNeverQueued(int phase)
+        public void NewBoltsStartImmediatelyInEveryPhaseWhileDuplicateInputIsRejected(int phase)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(phase);
-            Assert.That(Result(_coordinator.PlayAsync(1).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+            var next = _coordinator.PlayAsync(1).AsTask();
+            var nextWaits = _operations.Turns.Last();
+            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
+            Assert.That(nextWaits.Turn.Phase, Is.EqualTo(TurnPhase.Reserved));
             Assert.That(Result(_coordinator.PlayAsync(0).AsTask()).Outcome, Is.EqualTo(
                 phase >= 2 ? BoltReservationOutcome.AlreadyRemoved : BoltReservationOutcome.AlreadyReserved));
             Finish(waits);
             Result(task);
-            Assert.That(_operations.Turns, Has.Count.EqualTo(1));
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
-            CollectionAssert.AreEqual(new[] { 0 }, _coordinator.Attempt.DetachedBoltIds);
+            Finish(nextWaits);
+            Result(next);
+            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
+            CollectionAssert.AreEqual(new[] { 0, 1 }, _coordinator.Attempt.DetachedBoltIds);
         }
 
         [TestCase(0)]
@@ -97,10 +102,10 @@ namespace Screw.Tests.Gameplay
             Assert.That(_coordinator.Attempt, Is.Not.SameAs(oldAttempt));
 
             var newTask = _coordinator.PlayAsync(1).AsTask();
-            var current = _coordinator.Attempt.CurrentTurn;
+            var current = _coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             var newWaits = _operations.Turns.Last();
             Finish(oldWaits);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.SameAs(current));
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(current));
             Assert.That(current.Phase, Is.EqualTo(TurnPhase.Reserved));
             Assert.That(newTask.IsCompleted, Is.False);
             Assert.That(_coordinator.Attempt.DetachedBoltIds, Is.Empty);
@@ -118,7 +123,7 @@ namespace Screw.Tests.Gameplay
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(phase);
-            var turn = _coordinator.Attempt.CurrentTurn;
+            var turn = _coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             var savedPhase = turn.Phase;
             _coordinator.Dispose();
             AssertCanceled(task);
@@ -133,7 +138,7 @@ namespace Screw.Tests.Gameplay
         [TestCase(1)]
         [TestCase(2)]
         [TestCase(3)]
-        public void OperationErrorsPropagateAndKeepTurnBlockedUntilRestart(int phase)
+        public void OperationErrorsPropagateWithoutGloballyRejectingOtherBolts(int phase)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(phase);
@@ -142,9 +147,12 @@ namespace Screw.Tests.Gameplay
             pending.TrySetException(error);
             var observed = Assert.Throws<InvalidOperationException>(() => Result(task));
             Assert.That(observed, Is.SameAs(error));
-            Assert.That(Result(_coordinator.PlayAsync(1).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
+            var next = _coordinator.PlayAsync(1).AsTask();
+            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
+            Finish(_operations.Turns.Last());
+            Result(next);
             _coordinator.Restart();
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(_coordinator.Attempt.DetachedBoltIds, Is.Empty);
         }
 
@@ -161,7 +169,7 @@ namespace Screw.Tests.Gameplay
             AssertCanceled(second);
             Finish(secondWaits);
             Finish(firstWaits);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
             Assert.That(_coordinator.Attempt.DetachedBoltIds, Is.Empty);
             Assert.That(_coordinator.Attempt.RemainingBoltsByPart[0], Is.EqualTo(1));
         }
@@ -172,12 +180,12 @@ namespace Screw.Tests.Gameplay
             var result = Result(_coordinator.PlayAsync(999).AsTask());
             Assert.That(result.Outcome, Is.EqualTo(BoltReservationOutcome.UnknownBolt));
             Assert.That(_operations.Turns, Is.Empty);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
         }
 
         [TestCase(true)]
         [TestCase(false)]
-        public void BothSortingAndRemovalMustFinishBeforeUnlocking(bool removalFirst)
+        public void BothOperationsFinishTheirTurnWithoutBlockingAnotherDetachment(bool removalFirst)
         {
             var task = _coordinator.PlayAsync(0).AsTask();
             var waits = AdvanceTo(2);
@@ -192,18 +200,15 @@ namespace Screw.Tests.Gameplay
             }
 
             Assert.That(task.IsCompleted, Is.False);
-            for (var index = 0; index < 20; index++)
-            {
-                Assert.That(Result(_coordinator.PlayAsync(1).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
-            }
+            var next = _coordinator.PlayAsync(1).AsTask();
+            var nextWaits = _operations.Turns.Last();
+            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
+            Assert.That(nextWaits.Turn.Phase, Is.EqualTo(TurnPhase.Reserved));
 
             Finish(waits);
             Result(task);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
-            Assert.That(_operations.Turns, Has.Count.EqualTo(1), "Rejected taps must not be queued.");
-            var next = _coordinator.PlayAsync(1).AsTask();
-            Assert.That(_operations.Turns, Has.Count.EqualTo(2));
-            Finish(_operations.Turns.Last());
+            Assert.That(_coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 1 }));
+            Finish(nextWaits);
             Result(next);
         }
 
@@ -216,7 +221,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(waits.RemovalRequested, Is.False);
             waits.Finish.TrySetResult();
             Result(task);
-            Assert.That(_coordinator.Attempt.CurrentTurn, Is.Null);
+            Assert.That(_coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
         }
 
         [Test]
@@ -238,6 +243,120 @@ namespace Screw.Tests.Gameplay
             Assert.That(final.IsCompleted, Is.False);
             waits.Removal.TrySetResult();
             Result(final);
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Won));
+        }
+
+        [Test]
+        public void ConcurrentFlightsKeepReservationsUntilArrivalAndWaitForContainerReplacement()
+        {
+            var tasks = Enumerable.Range(0, 3).Select(id => _coordinator.PlayAsync(id).AsTask()).ToArray();
+            var waits = _operations.Turns.ToArray();
+            foreach (var item in waits)
+            {
+                item.Detach.TrySetResult();
+            }
+
+            Assert.That(waits.All(item => item.ArrivalRequested), Is.True, "Flights must overlap.");
+            waits[2].Arrive.TrySetResult();
+            Assert.That(_coordinator.Attempt.CollectedBoltIds, Is.Empty);
+            waits[1].Arrive.TrySetResult();
+            Assert.That(waits[1].FinishRequested, Is.False);
+            waits[2].Finish.TrySetResult();
+            Assert.That(waits[1].FinishRequested, Is.True);
+            waits[1].Finish.TrySetResult();
+            waits[0].Arrive.TrySetResult();
+            Assert.That(_coordinator.Attempt.CollectedBoltIds, Is.EquivalentTo(new[] { 0, 1, 2 }));
+            var next = _coordinator.PlayAsync(6).AsTask();
+            var nextWaits = _operations.Turns.Last();
+            nextWaits.Detach.TrySetResult();
+            Assert.That(nextWaits.Turn.Phase, Is.EqualTo(TurnPhase.InTransit));
+            Assert.That(nextWaits.ArrivalRequested, Is.False, "The new container must finish replacing before receiving flights.");
+            waits[0].Finish.TrySetResult();
+            Assert.That(nextWaits.ArrivalRequested, Is.True);
+            Finish(nextWaits);
+            Result(next);
+            foreach (var item in waits)
+            {
+                Finish(item);
+            }
+
+            foreach (var task in tasks)
+            {
+                Result(task);
+            }
+
+            AttemptTestSteps.AssertConservation(_coordinator.Attempt);
+        }
+
+        [Test]
+        public void RestartCancelsConcurrentWaitersAndOldCompletionsCannotOpenANewSortingGate()
+        {
+            var first = _coordinator.PlayAsync(0).AsTask();
+            var firstWaits = AdvanceTo(2);
+            var second = _coordinator.PlayAsync(1).AsTask();
+            var secondWaits = AdvanceTo(1);
+            Assert.That(secondWaits.ArrivalRequested, Is.False);
+            _coordinator.Restart();
+            AssertCanceled(first);
+            AssertCanceled(second);
+            var current = _coordinator.PlayAsync(2).AsTask();
+            var currentWaits = AdvanceTo(2);
+            Finish(firstWaits);
+            Finish(secondWaits);
+            var next = _coordinator.PlayAsync(3).AsTask();
+            var nextWaits = AdvanceTo(1);
+            Assert.That(nextWaits.ArrivalRequested, Is.False);
+            Finish(currentWaits);
+            Result(current);
+            Assert.That(nextWaits.ArrivalRequested, Is.True);
+            Finish(nextWaits);
+            Result(next);
+            Assert.That(_coordinator.Attempt.DetachedBoltIds, Is.EquivalentTo(new[] { 2, 3 }));
+        }
+
+        [Test]
+        public void OverflowCancelsAllInflightOperationsAndLateCompletionsCannotUndoLoss()
+        {
+            _coordinator.Dispose();
+            var source = LevelTestFixtures.Source(5);
+            _coordinator = new TurnCoordinator(new LevelAttempt(source, LevelTestFixtures.Gameplay(source)), _operations);
+            var ids = _coordinator.Attempt.Bolts.Values.Where(bolt => bolt.ColorGroupId == 2).Select(bolt => bolt.Id).ToArray();
+            var tasks = ids.Take(5).Select(id => _coordinator.PlayAsync(id).AsTask()).ToArray();
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            Assert.That(Result(_coordinator.PlayAsync(ids.Last()).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.PoolOverflow));
+            foreach (var task in tasks)
+            {
+                AssertCanceled(task);
+            }
+
+            foreach (var item in _operations.Turns)
+            {
+                Finish(item);
+            }
+
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Lost));
+            Assert.That(_coordinator.Attempt.DetachedBoltIds, Is.Empty);
+            Assert.That(Result(_coordinator.PlayAsync(0).AsTask()).Outcome, Is.EqualTo(BoltReservationOutcome.AttemptInactive));
+            Assert.That(_operations.Turns, Has.Count.EqualTo(5));
+        }
+
+        [Test]
+        public void VictoryAlsoWaitsForAnEarlierReleasedPartAfterAllOtherBoltsComplete()
+        {
+            var first = _coordinator.PlayAsync(0).AsTask();
+            var waits = AdvanceTo(3);
+            for (var id = 1; id < _coordinator.Attempt.Bolts.Count; id++)
+            {
+                var task = _coordinator.PlayAsync(id).AsTask();
+                Finish(_operations.Turns.Last());
+                Result(task);
+            }
+
+            Assert.That(_coordinator.Attempt.IsVictoryReady, Is.True);
+            Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            Assert.That(_coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 0 }));
+            waits.Removal.TrySetResult();
+            Result(first);
             Assert.That(_coordinator.Attempt.Status, Is.EqualTo(AttemptStatus.Won));
         }
 

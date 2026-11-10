@@ -30,7 +30,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(attempt.Containers.Count, Is.EqualTo(2));
             var stored = attempt.PoolSlots.Concat(attempt.Containers.SelectMany(container => container.Slots))
                 .Where(id => id.HasValue).Select(id => id.Value).Concat(attempt.CollectedBoltIds).ToArray();
-            CollectionAssert.AreEquivalent(attempt.DetachedBoltIds, stored);
+            CollectionAssert.AreEquivalent(attempt.DetachedBoltIds.Union(attempt.Reservations.Keys), stored);
             Assert.That(stored.Distinct().Count(), Is.EqualTo(stored.Length));
             foreach (var part in attempt.RemainingBoltsByPart)
             {
@@ -54,7 +54,7 @@ namespace Screw.Tests.Gameplay
 
                 if (container.IsActive && container.ReservedCount < 3)
                 {
-                    Assert.That(attempt.PoolSlots.Where(id => id.HasValue)
+                    Assert.That(attempt.PoolSlots.Where(id => id.HasValue && !attempt.Reservations.ContainsKey(id.Value))
                         .Any(id => attempt.Bolts[id.Value].ColorGroupId == container.ColorGroupId), Is.False);
                 }
             }

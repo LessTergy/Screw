@@ -26,7 +26,12 @@ namespace Screw.Editor.Levels
 
         public static void Bind(LevelView view)
         {
-            var source = ValidateInstanceSource(view);
+            Bind(view, requireCampaignPaths: true);
+        }
+
+        internal static void Bind(LevelView view, bool requireCampaignPaths)
+        {
+            var source = ValidateInstanceSource(view, requireCampaignPaths);
             var root = view.LevelRoot;
             using (var serialized = new SerializedObject(view))
             {
@@ -66,7 +71,7 @@ namespace Screw.Editor.Levels
             view.ValidateBindings();
         }
 
-        private static LevelSourceData ValidateInstanceSource(LevelView view)
+        private static LevelSourceData ValidateInstanceSource(LevelView view, bool requireCampaignPaths = true)
         {
             if (view == null || EditorApplication.isPlayingOrWillChangePlaymode
                 || EditorUtility.IsPersistent(view) || PrefabStageUtility.GetPrefabStage(view.gameObject) != null)
@@ -86,7 +91,7 @@ namespace Screw.Editor.Levels
                 throw new InvalidOperationException("Level Root must be an instance of the prefab referenced by the content catalog.");
             }
 
-            LevelContentCatalogUtility.ValidateReferences(view.ContentCatalog);
+            LevelContentCatalogUtility.ValidateReferences(view.ContentCatalog, requireCampaignPaths ? (int?)null : view.LevelNumber);
             LevelContentCatalogUtility.ValidateLevelPrefab(source, view.LevelRoot.gameObject);
             return source;
         }

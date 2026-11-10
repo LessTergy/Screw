@@ -58,7 +58,7 @@ namespace Screw.Tests.Gameplay
         }
 
         [Test]
-        public void FullContainerBlocksFurtherInputUntilArrivalAndCompletion()
+        public void FullReservedContainerRoutesTheNextBoltToThePoolWithoutBlockingInput()
         {
             var source = LevelTestFixtures.Source();
             var gameplay = LevelTestFixtures.Gameplay(source);
@@ -71,11 +71,12 @@ namespace Screw.Tests.Gameplay
 
             var pending = attempt.ReserveBolt(bolts[2].Id);
             var result = attempt.ReserveBolt(bolts[3].Id);
-            Assert.That(result.Outcome, Is.EqualTo(BoltReservationOutcome.TurnInProgress));
-            Assert.That(result.Turn, Is.Null);
+            Assert.That(result.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
+            Assert.That(result.Turn.Destination.IsPool, Is.True);
             Assert.That(attempt.Containers[0].ReservedCount, Is.EqualTo(3));
             CollectionAssert.AreEqual(gameplay.ContainerGroups.Skip(2), attempt.ContainerQueue);
             Assert.That(attempt.CancelReservation(pending.Turn), Is.True);
+            Assert.That(attempt.CancelReservation(result.Turn), Is.True);
         }
 
         [Test]
@@ -89,6 +90,61 @@ namespace Screw.Tests.Gameplay
             var result = attempt.ReserveBolt(bolt.Id);
             Assert.That(result.Destination.Value.IsPool, Is.True);
             Assert.That(attempt.Containers.All(container => container.ReservedCount == 0), Is.True);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ConcurrentContainerReservationsWaitForEveryArrivalBeforeReplacement(bool reverse)
+        {
+            var source = LevelTestFixtures.Source();
+            var attempt = new LevelAttempt(source, LevelTestFixtures.Gameplay(source));
+            var turns = Enumerable.Range(0, 3).Select(id => attempt.ReserveBolt(id).Turn).ToArray();
+            Assert.That(turns.Select(turn => turn.Destination.SlotIndex), Is.EquivalentTo(new[] { 0, 1, 2 }));
+            Assert.That(attempt.ActiveTurns, Has.Count.EqualTo(3));
+            AttemptTestSteps.AssertConservation(attempt);
+            if (reverse)
+            {
+                System.Array.Reverse(turns);
+            }
+
+            foreach (var turn in turns)
+            {
+                Assert.That(attempt.ConfirmDetachment(turn), Is.True);
+                Assert.That(attempt.ConfirmDetachment(turn), Is.False);
+            }
+
+            for (var index = 0; index < turns.Length; index++)
+            {
+                Assert.That(attempt.ConfirmArrival(turns[index]), Is.True);
+                Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo(index < 2 ? 0 : 3));
+                Assert.That(attempt.CompleteTurn(turns[index]), Is.True);
+                AttemptTestSteps.AssertConservation(attempt);
+            }
+
+            Assert.That(turns.Count(turn => turn.ReleasedPartId == 0), Is.EqualTo(1));
+            Assert.That(attempt.ActiveTurns, Is.Empty);
+            var next = attempt.ReserveBolt(6);
+            Assert.That(next.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
+            Assert.That(next.Destination.Value.ContainerIndex, Is.Zero);
+            Assert.That(next.Destination.Value.SlotIndex, Is.Zero);
+        }
+
+        [Test]
+        public void FullPoolReservationsStillAllowMatchingBoltsAndProtectTheLastSlot()
+        {
+            var source = LevelTestFixtures.Source(5);
+            var attempt = new LevelAttempt(source, LevelTestFixtures.Gameplay(source));
+            var bolts = attempt.Bolts.Values.Where(bolt => bolt.ColorGroupId == 2).ToArray();
+            var turns = bolts.Take(5).Select(bolt => attempt.ReserveBolt(bolt.Id).Turn).ToArray();
+            Assert.That(turns.Select(turn => turn.Destination.SlotIndex), Is.EquivalentTo(new[] { 0, 1, 2, 3, 4 }));
+            Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            var matching = attempt.ReserveBolt(0);
+            Assert.That(matching.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
+            Assert.That(matching.Destination.Value.IsPool, Is.False);
+            Assert.That(attempt.ReserveBolt(bolts.Last().Id).Outcome, Is.EqualTo(BoltReservationOutcome.PoolOverflow));
+            Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Lost));
+            Assert.That(attempt.DetachedBoltIds, Is.Empty);
+            Assert.That(attempt.PoolCount, Is.EqualTo(5));
         }
 
         [Test]
@@ -194,7 +250,7 @@ namespace Screw.Tests.Gameplay
             first.ReserveBolt(0);
             first.ReserveBolt(first.Bolts.Values.First(bolt => bolt.ColorGroupId == 2).Id);
 
-            Assert.That(first.Reservations.Count, Is.EqualTo(1));
+            Assert.That(first.Reservations.Count, Is.EqualTo(2));
             Assert.That(JsonConvert.SerializeObject(second), Is.EqualTo(expectedSecond));
             Assert.That(JsonConvert.SerializeObject(otherLevel), Is.EqualTo(expectedOtherLevel));
         }

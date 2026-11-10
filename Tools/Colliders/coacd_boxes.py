@@ -3,6 +3,7 @@
 import json
 import importlib.metadata
 import hashlib
+import os
 import sys
 from pathlib import Path
 
@@ -110,7 +111,7 @@ def convex_parts(vertices, triangles, max_boxes, threshold):
             seed=42,
         )
         cache.parent.mkdir(parents=True, exist_ok=True)
-        temporary = cache.with_suffix(".tmp")
+        temporary = cache.with_suffix("." + str(os.getpid()) + ".tmp")
         temporary.write_text(json.dumps([(v.tolist(), f.tolist()) for v, f in parts]), encoding="utf-8")
         temporary.replace(cache)
     return parts
@@ -120,6 +121,6 @@ if __name__ == "__main__":
     request = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
     result = decompose(request)
     output = Path(sys.argv[2])
-    temporary = output.with_suffix(".tmp")
+    temporary = output.with_suffix("." + str(os.getpid()) + ".tmp")
     temporary.write_text(json.dumps(result, allow_nan=False), encoding="utf-8")
     temporary.replace(output)

@@ -1,0 +1,733 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "d5dbebf84021b0bf38dda2e230dc2a3cd3f110893059d8ad8baf9392194cfd52",
+  "parts": 8,
+  "anchors": 21,
+  "triangles": 12762,
+  "method": "Welded connected manifold shells, winding, non-adjacent triangle overlap, pairwise axis separation and owner surface rays.",
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2008,
+        "geometryVertices": 1006,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 184.014167,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 3230,
+        "geometryVertices": 1617,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 104.359267,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 676,
+        "geometryVertices": 340,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.588795,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 676,
+        "geometryVertices": 340,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.588794,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 1528,
+        "geometryVertices": 766,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 14.29517,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 40.401726,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 40.401726,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1220,
+        "geometryVertices": 612,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.541936,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.007999
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 0.007998
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 4.815608
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 0.26426
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "axisGap": 0.26426
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "axisGap": 0.07
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 4.15056
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 4.150559
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.008
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "axisGap": 0.008
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 1.983659
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 8.951168
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 4.39982
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "axisGap": 4.39982
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "axisGap": 2.569771
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 8.951167
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 4.399819
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "axisGap": 4.399819
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "axisGap": 2.56977
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 0.052225
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "axisGap": 0.052225
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "axisGap": 4.63
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "axisGap": 4.224
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "axisGap": 0.581528
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "axisGap": 2.10373
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "ownerId": 1,
+        "blockingPartId": 5,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 0.975001
+      },
+      {
+        "boltId": 4,
+        "ownerId": 1,
+        "blockingPartId": 6,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 0.975001
+      }
+    ],
+    "otherMountsVisibleAlongOwnAxes": 19,
+    "matingSurfaces": [
+      {
+        "partId": 0,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 0.6596,
+        "checkedCapArea": 16.96689
+      },
+      {
+        "partId": 2,
+        "againstPartId": 0,
+        "gap": 0.007999,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 9.43027
+      },
+      {
+        "partId": 3,
+        "againstPartId": 0,
+        "gap": 0.007999,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 9.43027
+      },
+      {
+        "partId": 4,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 0.7829,
+        "checkedCapArea": 7.52253
+      },
+      {
+        "partId": 7,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 0.9284
+      },
+      {
+        "partId": 5,
+        "againstPartId": 1,
+        "gap": 0.008,
+        "matchedPerimeter": true
+      },
+      {
+        "partId": 6,
+        "againstPartId": 1,
+        "gap": 0.008,
+        "matchedPerimeter": true
+      }
+    ]
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2008,
+        "geometryVertices": 1006,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 184.014167,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 3230,
+        "geometryVertices": 1617,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 104.359267,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 676,
+        "geometryVertices": 340,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.588795,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 676,
+        "geometryVertices": 340,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.588794,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 1528,
+        "geometryVertices": 766,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 14.29517,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 40.401726,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 1712,
+        "geometryVertices": 858,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 40.401726,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1220,
+        "geometryVertices": 612,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "degenerateTriangles": 0,
+        "inconsistentEdges": 0,
+        "signedVolume": 8.541936,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "axisGap": 0.007999
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "axisGap": 0.007998
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "axisGap": 4.815608
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "axisGap": 0.26426
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "axisGap": 0.26426
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "axisGap": 0.07
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "axisGap": 4.15056
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "axisGap": 4.150559
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "axisGap": 0.008
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "axisGap": 0.008
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "axisGap": 0.015
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "axisGap": 1.983659
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "axisGap": 8.951168
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "axisGap": 4.39982
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "axisGap": 4.39982
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "axisGap": 2.569771
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "axisGap": 8.951167
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "axisGap": 4.399819
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "axisGap": 4.399819
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "axisGap": 2.56977
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "axisGap": 0.052225
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "axisGap": 0.052225
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "axisGap": 4.63
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "axisGap": 4.224
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "axisGap": 0.581528
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "axisGap": 2.10373
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "ownerId": 1,
+        "blockingPartId": 5,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 0.975001
+      },
+      {
+        "boltId": 4,
+        "ownerId": 1,
+        "blockingPartId": 6,
+        "occlusionRays": 9,
+        "accessibleAfterOwnCoverOnly": true,
+        "seatToCoverClearance": 0.975001
+      }
+    ],
+    "otherMountsVisibleAlongOwnAxes": 19,
+    "matingSurfaces": [
+      {
+        "partId": 0,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 0.6596,
+        "checkedCapArea": 16.96689
+      },
+      {
+        "partId": 2,
+        "againstPartId": 0,
+        "gap": 0.007999,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 9.43027
+      },
+      {
+        "partId": 3,
+        "againstPartId": 0,
+        "gap": 0.007999,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 9.43027
+      },
+      {
+        "partId": 4,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 0.7829,
+        "checkedCapArea": 7.52253
+      },
+      {
+        "partId": 7,
+        "againstPartId": 1,
+        "gap": 0.015,
+        "supportedCapFraction": 1.0,
+        "checkedCapArea": 0.9284
+      },
+      {
+        "partId": 5,
+        "againstPartId": 1,
+        "gap": 0.008,
+        "matchedPerimeter": true
+      },
+      {
+        "partId": 6,
+        "againstPartId": 1,
+        "gap": 0.008,
+        "matchedPerimeter": true
+      }
+    ],
+    "poses": "passed",
+    "hierarchy": "passed"
+  },
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}

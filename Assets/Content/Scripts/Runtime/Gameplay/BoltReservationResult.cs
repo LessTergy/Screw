@@ -24,7 +24,6 @@ namespace Screw.Gameplay
         AlreadyReserved,
         AttemptInactive,
         PoolOverflow,
-        TurnInProgress,
         AlreadyRemoved
     }
 

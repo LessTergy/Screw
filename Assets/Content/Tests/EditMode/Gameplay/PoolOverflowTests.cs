@@ -165,7 +165,7 @@ namespace Screw.Tests.Gameplay
                 attempt.PoolCount,
                 attempt.DetachedBoltIds,
                 attempt.CollectedBoltIds,
-                attempt.CurrentTurn
+                attempt.ActiveTurns
             });
         }
     }

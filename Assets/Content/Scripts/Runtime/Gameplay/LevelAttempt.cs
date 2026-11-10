@@ -11,6 +11,7 @@ namespace Screw.Gameplay
         private readonly Dictionary<int, AttemptBolt> _bolts;
         private readonly Dictionary<int, int> _remainingBoltsByPart;
         private readonly Dictionary<int, BoltDestination> _reservations;
+        private readonly Dictionary<int, AttemptTurn> _activeTurns = new Dictionary<int, AttemptTurn>();
         private readonly int?[][] _containerSlots;
         private readonly int?[] _poolSlots;
         private readonly AttemptContainer[] _containers;
@@ -31,7 +32,7 @@ namespace Screw.Gameplay
         public IReadOnlyList<int?> PoolSlots { get; }
         public IReadOnlyList<int> CollectedBoltIds { get; }
         public IReadOnlyList<int> DetachedBoltIds { get; }
-        public AttemptTurn CurrentTurn { get; private set; }
+        public IReadOnlyDictionary<int, AttemptTurn> ActiveTurns { get; }
 
         public bool IsVictoryReady
         {
@@ -68,6 +69,7 @@ namespace Screw.Gameplay
 
             _reservations = new Dictionary<int, BoltDestination>();
             Reservations = new ReadOnlyDictionary<int, BoltDestination>(_reservations);
+            ActiveTurns = new ReadOnlyDictionary<int, AttemptTurn>(_activeTurns);
             _containerSlots = Enumerable.Range(0, 2)
                 .Select(index => new int?[LevelDataValidator.ContainerCapacity]).ToArray();
             _containers = Enumerable.Range(0, 2).Select(index =>
@@ -107,11 +109,6 @@ namespace Screw.Gameplay
                 return new BoltReservationResult(BoltReservationOutcome.AlreadyRemoved);
             }
 
-            if (CurrentTurn != null)
-            {
-                return new BoltReservationResult(BoltReservationOutcome.TurnInProgress);
-            }
-
             for (var containerIndex = 0; containerIndex < Containers.Count; containerIndex++)
             {
                 if (!Containers[containerIndex].IsActive || Containers[containerIndex].ColorGroupId != bolt.ColorGroupId)
@@ -143,13 +140,14 @@ namespace Screw.Gameplay
         private BoltReservationResult StartTurn(int boltId, BoltDestination destination)
         {
             _reservations.Add(boltId, destination);
-            CurrentTurn = new AttemptTurn(boltId, destination);
-            return new BoltReservationResult(BoltReservationOutcome.Reserved, CurrentTurn);
+            var turn = new AttemptTurn(boltId, destination);
+            _activeTurns.Add(boltId, turn);
+            return new BoltReservationResult(BoltReservationOutcome.Reserved, turn);
         }
 
         public bool CancelReservation(AttemptTurn turn)
         {
-            if (!IsCurrentTurn(turn, TurnPhase.Reserved))
+            if (!IsActiveTurn(turn, TurnPhase.Reserved))
             {
                 return false;
             }
@@ -166,13 +164,13 @@ namespace Screw.Gameplay
 
             _reservations.Remove(turn.BoltId);
             turn.Phase = TurnPhase.Canceled;
-            CurrentTurn = null;
+            _activeTurns.Remove(turn.BoltId);
             return true;
         }
 
         public bool ConfirmDetachment(AttemptTurn turn)
         {
-            if (!IsCurrentTurn(turn, TurnPhase.Reserved))
+            if (!IsActiveTurn(turn, TurnPhase.Reserved))
             {
                 return false;
             }
@@ -191,7 +189,7 @@ namespace Screw.Gameplay
 
         public bool ConfirmArrival(AttemptTurn turn)
         {
-            if (!IsCurrentTurn(turn, TurnPhase.InTransit))
+            if (!IsActiveTurn(turn, TurnPhase.InTransit))
             {
                 return false;
             }
@@ -210,14 +208,14 @@ namespace Screw.Gameplay
 
         public bool CompleteTurn(AttemptTurn turn)
         {
-            if (!IsCurrentTurn(turn, TurnPhase.AwaitingCompletion))
+            if (!IsActiveTurn(turn, TurnPhase.AwaitingCompletion))
             {
                 return false;
             }
 
             turn.Phase = TurnPhase.Completed;
-            CurrentTurn = null;
-            if (IsVictoryReady)
+            _activeTurns.Remove(turn.BoltId);
+            if (IsVictoryReady && _activeTurns.Count == 0)
             {
                 Status = AttemptStatus.Won;
             }
@@ -230,10 +228,11 @@ namespace Screw.Gameplay
             return new LevelAttempt(_definition);
         }
 
-        private bool IsCurrentTurn(AttemptTurn turn, TurnPhase phase)
+        private bool IsActiveTurn(AttemptTurn turn, TurnPhase phase)
         {
             return Status == AttemptStatus.Active && turn != null
-                && ReferenceEquals(CurrentTurn, turn) && turn.Phase == phase;
+                && _activeTurns.TryGetValue(turn.BoltId, out var active)
+                && ReferenceEquals(active, turn) && turn.Phase == phase;
         }
 
         private IReadOnlyList<SortingStep> ResolveSorting()
@@ -242,7 +241,7 @@ namespace Screw.Gameplay
             while (true)
             {
                 var full = Array.FindIndex(_containers, container => container.IsActive
-                    && container.Slots.All(id => id.HasValue));
+                    && container.Slots.All(id => id.HasValue && !_reservations.ContainsKey(id.Value)));
                 if (full >= 0)
                 {
                     var ids = _containerSlots[full].Select(id => id.Value).ToArray();
