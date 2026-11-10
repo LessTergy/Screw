@@ -1,0 +1,11 @@
+{
+  "status": "prepared",
+  "manifestSha256": "6fa8a5aa563d680dc684d3f6cd4358bc97ffd4c1e98027d95acc4af51134ad85",
+  "glbSha256": "3f536954d0efac1fc3a038528c8738618711f2d335ee6297ba4185e6059c7283",
+  "importedGlbSha256": "3f536954d0efac1fc3a038528c8738618711f2d335ee6297ba4185e6059c7283",
+  "parts": 7,
+  "bolts": 18,
+  "colliders": 99,
+  "replayedSteps": 18,
+  "physicsPlaytest": "not_checked"
+}

@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 1,
+  "modelName": "PopsiclePrototype",
+  "glbSha256": "c2e96dcebff354f6b7f40a4827023e640578d7669f80666652dea54af80a5cce",
+  "transformCoordinates": "Blender right-handed, Z up; quaternion WXYZ",
+  "exportCoordinates": "glTF right-handed, Y up",
+  "unit": "1 Blender unit, max assembled dimension 14",
+  "parts": [
+    {
+      "id": 0,
+      "name": "Part_000_Top",
+      "nodePath": "Assembly/Model/Part_000_Top",
+      "position": [
+        0.0,
+        0.0,
+        11.8999996
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -2.8,
+          -1.15,
+          9.7999992
+        ],
+        [
+          2.8,
+          1.15,
+          14.0
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "Plastic_Top"
+      ],
+      "boltIds": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Part_001_Middle",
+      "nodePath": "Assembly/Model/Part_001_Middle",
+      "position": [
+        0.0,
+        0.0,
+        8.1599998
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -2.8,
+          -1.15,
+          6.5599999
+        ],
+        [
+          2.8,
+          1.15,
+          9.7600002
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "Plastic_Middle"
+      ],
+      "boltIds": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Part_002_Bottom",
+      "nodePath": "Assembly/Model/Part_002_Bottom",
+      "position": [
+        0.0,
+        0.0,
+        4.9200001
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -2.8,
+          -1.15,
+          3.3200002
+        ],
+        [
+          2.8,
+          1.15,
+          6.52
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "Plastic_Bottom"
+      ],
+      "boltIds": [
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Part_003_Stick",
+      "nodePath": "Assembly/Model/Part_003_Stick",
+      "position": [
+        0.0,
+        0.0,
+        1.64
+      ],
+      "quaternionWXYZ": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "worldBounds": [
+        [
+          -0.71,
+          -0.31,
+          0.0
+        ],
+        [
+          0.71,
+          0.31,
+          3.28
+        ]
+      ],
+      "triangleCount": 156,
+      "materialSlots": [
+        "Stick_Warm"
+      ],
+      "boltIds": [
+        7,
+        8
+      ]
+    }
+  ],
+  "bolts": [
+    {
+      "id": 0,
+      "ownerId": 0,
+      "nodePath": "Assembly/Bolts/Bolt_000_Owner_000",
+      "position": [
+        -0.9,
+        -1.152,
+        11.5600004
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 1,
+      "ownerId": 0,
+      "nodePath": "Assembly/Bolts/Bolt_001_Owner_000",
+      "position": [
+        0.92,
+        1.152,
+        12.4300003
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 2,
+      "ownerId": 1,
+      "nodePath": "Assembly/Bolts/Bolt_002_Owner_001",
+      "position": [
+        0.65,
+        -1.152,
+        8.1000004
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 3,
+      "ownerId": 1,
+      "nodePath": "Assembly/Bolts/Bolt_003_Owner_001",
+      "position": [
+        2.802,
+        0.0,
+        8.8500004
+      ],
+      "quaternionWXYZ": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 4,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_004_Owner_002",
+      "position": [
+        -1.1,
+        -1.152,
+        4.8200002
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 5,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_005_Owner_002",
+      "position": [
+        1.2,
+        1.152,
+        5.0999999
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 6,
+      "ownerId": 2,
+      "nodePath": "Assembly/Bolts/Bolt_006_Owner_002",
+      "position": [
+        -2.802,
+        0.0,
+        5.77
+      ],
+      "quaternionWXYZ": [
+        0.5,
+        0.5,
+        -0.5,
+        -0.5
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 7,
+      "ownerId": 3,
+      "nodePath": "Assembly/Bolts/Bolt_007_Owner_003",
+      "position": [
+        0.0,
+        -0.312,
+        2.1800001
+      ],
+      "quaternionWXYZ": [
+        0.7071068,
+        0.7071068,
+        0.0,
+        0.0
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    },
+    {
+      "id": 8,
+      "ownerId": 3,
+      "nodePath": "Assembly/Bolts/Bolt_008_Owner_003",
+      "position": [
+        0.0,
+        0.312,
+        1.05
+      ],
+      "quaternionWXYZ": [
+        -0.0,
+        0.0,
+        0.7071068,
+        0.7071068
+      ],
+      "outwardAxis": "+Z",
+      "mountFit": "not_checked"
+    }
+  ]
+}
