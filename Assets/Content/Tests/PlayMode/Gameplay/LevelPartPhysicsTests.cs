@@ -135,16 +135,13 @@ namespace Screw.Tests.Gameplay
             var neighbors = view.Parts.Skip(1).Select(part => part.Node).ToArray();
             var neighborPositions = neighbors.Select(node => node.position).ToArray();
             var neighborRotations = neighbors.Select(node => node.rotation).ToArray();
-            var pinnedBolts = view.Bolts.Skip(4).Select(bolt => bolt.Node).ToArray();
+            var pinnedBolts = view.Bolts.Skip(3).Select(bolt => bolt.Node).ToArray();
             var boltPositions = pinnedBolts.Select(node => node.position).ToArray();
-            for (var id = 0; id < 2; id++)
-            {
-                yield return Finish(coordinator.PlayAsync(id).AsTask());
-                AssertPinned(owner, position, rotation);
-            }
+            yield return Finish(coordinator.PlayAsync(0).AsTask());
+            AssertPinned(owner, position, rotation);
 
             Time.timeScale = 0f;
-            var task = coordinator.PlayAsync(2).AsTask();
+            var task = coordinator.PlayAsync(1).AsTask();
             var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             yield return null;
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
@@ -165,8 +162,8 @@ namespace Screw.Tests.Gameplay
             Assert.That(task.IsCompleted, Is.False, "The released part still has its own pending removal.");
             Assert.That(coordinator.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.SameAs(turn));
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.AwaitingCompletion));
-            var next = coordinator.PlayAsync(3).AsTask();
-            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 2, 3 }));
+            var next = coordinator.PlayAsync(2).AsTask();
+            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 1, 2 }));
             yield return Finish(next);
             Assert.That(owner != null && !task.IsCompleted, Is.True);
             owner.position += Vector3.down * 100f;

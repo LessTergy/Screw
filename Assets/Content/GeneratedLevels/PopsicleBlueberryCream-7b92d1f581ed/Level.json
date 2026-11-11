@@ -1,0 +1,247 @@
+{
+  "number": 1,
+  "sourceCampaignIndex": 0,
+  "sourceModelId": 129576224,
+  "sourceName": "PopsicleBlueberryCream",
+  "modelPosition": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "modelEulerDegrees": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "rootEulerDegrees": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "modelScale": 1.0,
+  "rootScale": 1.0,
+  "allowedBoltPaletteIndices": [
+    1,
+    2
+  ],
+  "parts": [
+    {
+      "id": 0,
+      "childIndex": 0,
+      "sourceLayer": 0,
+      "boltIds": [
+        0,
+        1
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_000_Top",
+      "nodePath": "Assembly/Model/Part_000_Top"
+    },
+    {
+      "id": 1,
+      "childIndex": 1,
+      "sourceLayer": 0,
+      "boltIds": [
+        2,
+        3
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_001_Middle",
+      "nodePath": "Assembly/Model/Part_001_Middle"
+    },
+    {
+      "id": 2,
+      "childIndex": 2,
+      "sourceLayer": 0,
+      "boltIds": [
+        4,
+        5,
+        6
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_002_Bottom",
+      "nodePath": "Assembly/Model/Part_002_Bottom"
+    },
+    {
+      "id": 3,
+      "childIndex": 3,
+      "sourceLayer": 0,
+      "boltIds": [
+        7,
+        8
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_003_Stick",
+      "nodePath": "Assembly/Model/Part_003_Stick"
+    }
+  ],
+  "bolts": [
+    {
+      "id": 0,
+      "ownerId": 0,
+      "position": [
+        1.5702517032623291,
+        11.010096549987793,
+        1.3445663452148438
+      ],
+      "eulerDegrees": [
+        357.243408203125,
+        7.2369322776794434,
+        2.2170406737132E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_000_Owner_000"
+    },
+    {
+      "id": 1,
+      "ownerId": 0,
+      "position": [
+        -0.92001992464065552,
+        11.900238037109375,
+        -1.3116532564163208
+      ],
+      "eulerDegrees": [
+        353.1512451171875,
+        180.57524108886719,
+        -6.61055491946172E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_001_Owner_000"
+    },
+    {
+      "id": 2,
+      "ownerId": 1,
+      "position": [
+        -0.65001833438873291,
+        7.8300290107727051,
+        1.4621857404708862
+      ],
+      "eulerDegrees": [
+        359.16830444335938,
+        359.47467041015625,
+        -5.086491938754989E-08
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_002_Owner_001"
+    },
+    {
+      "id": 3,
+      "ownerId": 1,
+      "position": [
+        -3.425926685333252,
+        8.5501041412353516,
+        -0.00010179188393522054
+      ],
+      "eulerDegrees": [
+        357.02117919921875,
+        267.07867431640625,
+        9.6179473985102959E-07
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_003_Owner_001"
+    },
+    {
+      "id": 4,
+      "ownerId": 2,
+      "position": [
+        1.0801180601119995,
+        5.0697240829467773,
+        1.3962043523788452
+      ],
+      "eulerDegrees": [
+        7.9371657371521,
+        3.414386510848999,
+        1.3469247051034472E-07
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_004_Owner_002"
+    },
+    {
+      "id": 5,
+      "ownerId": 2,
+      "position": [
+        -1.15011727809906,
+        5.2197885513305664,
+        -1.4100369215011597
+      ],
+      "eulerDegrees": [
+        6.0566320419311523,
+        183.37980651855469,
+        -5.9294720813340973E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_005_Owner_002"
+    },
+    {
+      "id": 6,
+      "ownerId": 2,
+      "position": [
+        3.3520581722259521,
+        5.7995800971984863,
+        9.6963274700101465E-05
+      ],
+      "eulerDegrees": [
+        12.121760368347168,
+        87.1576919555664,
+        4.8028409764810931E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_006_Owner_002"
+    },
+    {
+      "id": 7,
+      "ownerId": 3,
+      "position": [
+        -4.2500654672039673E-05,
+        2.2300000190734863,
+        0.39899986982345581
+      ],
+      "eulerDegrees": [
+        1.4489404748019297E-05,
+        358.7823486328125,
+        -4.0767815789877204E-08
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_007_Owner_003"
+    },
+    {
+      "id": 8,
+      "ownerId": 3,
+      "position": [
+        4.2500654672039673E-05,
+        1.1699999570846558,
+        -0.39899986982345581
+      ],
+      "eulerDegrees": [
+        -4.77086450700881E-06,
+        178.78236389160156,
+        5.5598534345335793E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_008_Owner_003"
+    }
+  ],
+  "sourcePrefab": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Model.prefab",
+  "prefab": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Level.prefab",
+  "glb": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Model.glb"
+}

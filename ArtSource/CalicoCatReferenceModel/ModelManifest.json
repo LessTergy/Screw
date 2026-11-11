@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "modelName": "CalicoCatReferenceModel",
-  "glbSha256": "ee0e307635a0d8952ff2a6e4a994edbcffd577de738fc1da575550bf970b9ae7",
+  "glbSha256": "ab404d0504a362fef4b825615dcf9d119f5efeb7a1a118df5fc48f0fa74563b8",
   "transformCoordinates": "Blender right-handed, Z up; quaternion WXYZ",
   "exportCoordinates": "glTF right-handed, Y up",
   "unit": "1 Blender unit",
@@ -80,7 +80,7 @@
           5.7080002
         ]
       ],
-      "triangleCount": 1956,
+      "triangleCount": 2096,
       "materialSlots": [
         "Warm cream"
       ],
@@ -194,17 +194,17 @@
       ],
       "worldBounds": [
         [
-          -2.918,
-          -4.4496479,
-          0.026
+          -2.8499999,
+          -4.3756862,
+          0.024
         ],
         [
-          2.918,
-          -2.0074954,
-          1.9400001
+          2.8499999,
+          -2.3497107,
+          1.938581
         ]
       ],
-      "triangleCount": 2444,
+      "triangleCount": 2242,
       "materialSlots": [
         "Warm cream"
       ],
@@ -241,12 +241,12 @@
           0.0239999
         ],
         [
-          -1.7763019,
+          -1.8020419,
           3.0652957,
           5.7080002
         ]
       ],
-      "triangleCount": 968,
+      "triangleCount": 980,
       "materialSlots": [
         "Terracotta"
       ],
@@ -278,7 +278,7 @@
       ],
       "worldBounds": [
         [
-          1.7763019,
+          1.8020419,
           -2.7452958,
           0.0239999
         ],
@@ -288,7 +288,7 @@
           5.7080002
         ]
       ],
-      "triangleCount": 968,
+      "triangleCount": 980,
       "materialSlots": [
         "Cocoa"
       ],
@@ -527,15 +527,15 @@
       "ownerId": 4,
       "nodePath": "Assembly/Bolts/Bolt_010_Owner_004",
       "position": [
-        -1.4708028,
-        -4.3112378,
-        0.7294481
+        -1.4814874,
+        -4.3351321,
+        0.7223654
       ],
       "quaternionWXYZ": [
-        0.5877841,
-        0.7802703,
-        -0.1707269,
-        -0.12861
+        0.6751706,
+        0.7228892,
+        -0.1073477,
+        -0.1002615
       ],
       "outwardAxis": "+Z",
       "mountFit": "not_checked"
@@ -545,15 +545,15 @@
       "ownerId": 4,
       "nodePath": "Assembly/Bolts/Bolt_011_Owner_004",
       "position": [
-        1.4708028,
-        -4.3112369,
-        0.7294481
+        1.4814878,
+        -4.3351321,
+        0.7223651
       ],
       "quaternionWXYZ": [
-        0.5877841,
-        0.7802702,
-        0.1707269,
-        0.12861
+        0.6751706,
+        0.7228892,
+        0.1073477,
+        0.1002615
       ],
       "outwardAxis": "+Z",
       "mountFit": "not_checked"
@@ -563,15 +563,15 @@
       "ownerId": 4,
       "nodePath": "Assembly/Bolts/Bolt_012_Owner_004",
       "position": [
-        -1.4802874,
-        -4.150846,
-        1.8437657
+        -1.45634,
+        -4.0810337,
+        1.6940067
       ],
       "quaternionWXYZ": [
-        0.9602893,
-        0.2264555,
-        -0.0374078,
-        -0.1586285
+        0.8902978,
+        0.445676,
+        -0.0418551,
+        -0.0836112
       ],
       "outwardAxis": "+Z",
       "mountFit": "not_checked"

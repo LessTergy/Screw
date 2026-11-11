@@ -141,7 +141,7 @@ namespace Screw.Tests.Levels
         }
 
         [UnityTest]
-        public IEnumerator RealStickBlocksAFacingHeadAndItsRemovalOpensTheRay()
+        public IEnumerator StickBlocksAFacingHeadWhenPlacedInItsRay()
         {
             var view = _scope.LevelView;
             var camera = _scope.SceneCamera;
@@ -150,22 +150,28 @@ namespace Screw.Tests.Levels
             camera.fieldOfView = _route.Camera.FieldOfViewDegrees;
             camera.aspect = _route.Camera.Aspect;
             input.FrameLevel();
-            input.Rotate(new Vector2(2f - input.Yaw, 91f - input.Pitch));
-            var target = view.GetBolt(3);
-            Vector2 screen = camera.WorldToScreenPoint(target.Node.TransformPoint(target.Node.GetComponent<BoxCollider>().center));
+            var step = _route.Steps[0];
+            var angles = LevelRouteData.Vector(step.LevelEulerDegrees);
+            input.Rotate(new Vector2(angles.y - input.Yaw, angles.x - input.Pitch));
+            Vector2 screen = camera.ViewportToScreenPoint(new Vector3(step.ViewportPoint[0], step.ViewportPoint[1], 0f));
             var ray = camera.ScreenPointToRay(screen);
+            var target = view.GetBolt(step.BoltId);
             Assert.That(Vector3.Dot(target.Node.forward, -ray.direction), Is.GreaterThan(0.1f));
-            Assert.That(selection.TrySelect(screen, out _), Is.False);
-            var stick = view.GetPart(3).Node.gameObject;
+            Assert.That(selection.TrySelect(screen, out var selected), Is.True);
+            Assert.That(selected.Id, Is.EqualTo(step.BoltId));
+            var stick = view.GetPart(3).Node;
+            var position = stick.localPosition;
+            var blocker = stick.GetComponentInChildren<BoxCollider>().bounds;
+            var head = target.Node.GetComponent<BoxCollider>().bounds;
+            var headDistance = Vector3.Dot(head.center - ray.origin, ray.direction);
             try
             {
-                stick.SetActive(false);
-                Assert.That(selection.TrySelect(screen, out var selected), Is.True);
-                Assert.That(selected.Id, Is.EqualTo(3));
+                stick.position += ray.GetPoint(headDistance - head.extents.magnitude - blocker.extents.magnitude - 0.1f) - blocker.center;
+                Assert.That(selection.TrySelect(screen, out _), Is.False);
             }
             finally
             {
-                stick.SetActive(true);
+                stick.localPosition = position;
             }
 
             yield return null;
@@ -178,12 +184,14 @@ namespace Screw.Tests.Levels
             using (var session = new LevelRouteSession(view, _scope.SceneCamera, _scope.Container.Resolve<BoltSelection>(), _route))
             {
                 session.PrepareNext();
-                var other = view.GetBolt(1);
-                Vector2 screen = _scope.SceneCamera.WorldToScreenPoint(other.Node.TransformPoint(other.Node.GetComponent<BoxCollider>().center));
+                var other = _route.Steps[1];
                 var input = _scope.SceneCamera.GetComponent<OrbitCamera>();
+                var angles = LevelRouteData.Vector(other.LevelEulerDegrees);
+                input.Rotate(new Vector2(angles.y - input.Yaw, angles.x - input.Pitch));
+                Vector2 screen = _scope.SceneCamera.ViewportToScreenPoint(new Vector3(other.ViewportPoint[0], other.ViewportPoint[1], 0f));
                 input.BeginPointer(-1, screen);
                 input.UpdatePointer(-1, screen, true);
-                Assert.That(session.Message, Does.Contain("selected 1"));
+                Assert.That(session.Message, Does.Contain("selected " + other.BoltId));
                 Assert.That(session.StepIndex, Is.Zero);
                 Assert.That(view.Bolts.All(bolt => bolt.Node.gameObject.activeSelf), Is.True);
                 Assert.That(view.Parts.All(part => part.Node.gameObject.activeSelf), Is.True);

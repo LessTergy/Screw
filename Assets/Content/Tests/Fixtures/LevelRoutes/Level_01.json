@@ -8,110 +8,110 @@
   "steps": [
     {
       "boltId": 0,
-      "viewportPoint": [
-        0.4043855,
-        0.6611238
-      ],
       "levelEulerDegrees": [
-        0.0,
-        0.0,
+        2.7787044,
+        172.7715,
         0.0
+      ],
+      "viewportPoint": [
+        0.4254459,
+        0.6204785
       ]
     },
     {
       "boltId": 1,
-      "viewportPoint": [
-        0.3184506,
-        0.579852641
-      ],
       "levelEulerDegrees": [
-        0.0,
-        0.0,
+        173.1509,
+        180.571152,
         0.0
+      ],
+      "viewportPoint": [
+        0.5487806,
+        0.355143249
       ]
     },
     {
       "boltId": 2,
-      "viewportPoint": [
-        0.5924013,
-        0.6644131
-      ],
       "levelEulerDegrees": [
-        0.0,
-        180.0,
+        0.831741333,
+        180.525284,
         0.0
+      ],
+      "viewportPoint": [
+        0.5339035,
+        0.5245167
       ]
     },
     {
       "boltId": 3,
-      "viewportPoint": [
-        0.4588893,
-        0.4698601
-      ],
       "levelEulerDegrees": [
-        0.0,
-        0.0,
+        134.403625,
+        265.828674,
         0.0
+      ],
+      "viewportPoint": [
+        0.450377941,
+        0.464636236
       ]
     },
     {
       "boltId": 4,
-      "viewportPoint": [
-        0.5385646,
-        0.463084072
-      ],
       "levelEulerDegrees": [
-        0.0,
-        180.0,
+        352.0489,
+        176.618362,
         0.0
+      ],
+      "viewportPoint": [
+        0.446304381,
+        0.447477728
       ]
     },
     {
       "boltId": 5,
-      "viewportPoint": [
-        0.6800879,
-        0.5834947
-      ],
       "levelEulerDegrees": [
-        0.0,
-        0.0,
+        186.067078,
+        183.360916,
         0.0
+      ],
+      "viewportPoint": [
+        0.5567068,
+        0.549450457
       ]
     },
     {
       "boltId": 6,
-      "viewportPoint": [
-        0.306568325,
-        0.5651096
-      ],
       "levelEulerDegrees": [
-        0.0,
-        180.0,
+        283.000366,
+        102.445671,
         0.0
+      ],
+      "viewportPoint": [
+        0.5242955,
+        0.4912357
       ]
     },
     {
       "boltId": 7,
-      "viewportPoint": [
-        0.500047743,
-        0.390041083
-      ],
       "levelEulerDegrees": [
         0.0,
-        0.0,
+        181.217651,
         0.0
+      ],
+      "viewportPoint": [
+        0.499176532,
+        0.360665917
       ]
     },
     {
       "boltId": 8,
-      "viewportPoint": [
-        0.500061333,
-        0.350809038
-      ],
       "levelEulerDegrees": [
-        0.0,
         180.0,
+        178.782364,
         0.0
+      ],
+      "viewportPoint": [
+        0.499963,
+        0.6702901
       ]
     }
   ]

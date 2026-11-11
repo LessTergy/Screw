@@ -1,0 +1,193 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "4def3515a1fa1b1310248353714d215d53cb0dd003c9e9f4f3def43b4fcdaea4",
+  "parts": 4,
+  "anchors": 9,
+  "triangles": 6000,
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2480,
+        "geometryVertices": 1242,
+        "signedVolume": 58.312271,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 1040,
+        "geometryVertices": 522,
+        "signedVolume": 48.168733,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1760,
+        "geometryVertices": 882,
+        "signedVolume": 43.76378,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 720,
+        "geometryVertices": 362,
+        "signedVolume": 3.801996,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "surfaceIntersection": false
+      }
+    ],
+    "visibleBoltAnchors": 9
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 2480,
+        "geometryVertices": 1242,
+        "signedVolume": 58.312271,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 1040,
+        "geometryVertices": 522,
+        "signedVolume": 48.168733,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1760,
+        "geometryVertices": 882,
+        "signedVolume": 43.76378,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 720,
+        "geometryVertices": 362,
+        "signedVolume": 3.801996,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "surfaceIntersection": false
+      }
+    ],
+    "visibleBoltAnchors": 9
+  },
+  "reference": "ArtSource/References/Popsicle/C-Blueberry-Cream.png",
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "normalMap": {
+    "partId": 0,
+    "space": "tangent",
+    "embeddedPngSha256": "6238cedacefe4fca001ce2fcb6fef57cbcf5696e4ef3cd78c8db7f73d7cfde69",
+    "sourceUv": "GrooveUV",
+    "glbTangents": "passed",
+    "reimportedMaterial": "passed"
+  },
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}

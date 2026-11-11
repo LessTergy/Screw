@@ -312,9 +312,16 @@ namespace Screw.Tests.Gameplay
             var oldScope = _scope;
             var oldBolts = _scope.LevelView.Bolts.Select(bolt => bolt.Node).ToArray();
             _scope.GameplaySession.enabled = true;
-            var input = _scope.SceneCamera.GetComponent<OrbitCamera>();
-            input.Rotate(new Vector2(-input.Yaw, -input.Pitch));
-            Vector2 point = _scope.SceneCamera.WorldToScreenPoint(_scope.LevelView.GetBolt(0).Node.GetComponent<Collider>().bounds.center);
+            var camera = _scope.SceneCamera;
+            var input = camera.GetComponent<OrbitCamera>();
+            var route = LevelRouteData.Read(File.ReadAllText(LevelRouteData.LevelOnePath), _scope.LevelView.ReadSource());
+            camera.aspect = route.Camera.Aspect;
+            camera.fieldOfView = route.Camera.FieldOfViewDegrees;
+            input.FrameLevel();
+            var step = route.Steps[0];
+            var angles = LevelRouteData.Vector(step.LevelEulerDegrees);
+            input.Rotate(new Vector2(angles.y - input.Yaw, angles.x - input.Pitch));
+            Vector2 point = camera.ViewportToScreenPoint(new Vector3(step.ViewportPoint[0], step.ViewportPoint[1], 0f));
             input.BeginPointer(-1, point);
             input.UpdatePointer(-1, point, true);
             yield return Wait(() => oldScope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault().Phase == TurnPhase.InTransit,
@@ -336,8 +343,7 @@ namespace Screw.Tests.Gameplay
         {
             var coordinator = _scope.GameplaySession.Coordinator;
             yield return Finish(coordinator.PlayAsync(0).AsTask());
-            yield return Finish(coordinator.PlayAsync(1).AsTask());
-            var task = coordinator.PlayAsync(2).AsTask();
+            var task = coordinator.PlayAsync(1).AsTask();
             var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             yield return Wait(() => turn.Phase == TurnPhase.InTransit, "Part did not release.");
             var part = _scope.LevelView.GetPart(0).Node;
@@ -353,7 +359,7 @@ namespace Screw.Tests.Gameplay
             camera.aspect = route.Camera.Aspect;
             camera.fieldOfView = route.Camera.FieldOfViewDegrees;
             input.FrameLevel();
-            var step = route.Steps[3];
+            var step = route.Steps[2];
             var rotation = LevelRouteData.Vector(step.LevelEulerDegrees);
             input.Rotate(new Vector2(rotation.y - input.Yaw, rotation.x - input.Pitch));
             Vector2 point = camera.ViewportToScreenPoint(new Vector3(step.ViewportPoint[0], step.ViewportPoint[1], 0f));
@@ -362,7 +368,7 @@ namespace Screw.Tests.Gameplay
             var selections = 0;
             Action<LevelBoltBinding> onSelected = bolt =>
             {
-                Assert.That(bolt.Id, Is.EqualTo(3));
+                Assert.That(bolt.Id, Is.EqualTo(step.BoltId));
                 selections++;
             };
             selection.Selected += onSelected;
@@ -374,10 +380,10 @@ namespace Screw.Tests.Gameplay
 
             selection.Selected -= onSelected;
             Assert.That(selections, Is.EqualTo(1), "Accepted withdrawal disables the head collider immediately.");
-            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 2, 3 }));
-            var nextTurn = coordinator.Attempt.ActiveTurns[3];
+            Assert.That(coordinator.Attempt.ActiveTurns.Keys, Is.EquivalentTo(new[] { 1, 2 }));
+            var nextTurn = coordinator.Attempt.ActiveTurns[2];
             Assert.That(nextTurn.Phase, Is.EqualTo(TurnPhase.Reserved));
-            CollectionAssert.AreEqual(new[] { 0, 1, 2 }, coordinator.Attempt.DetachedBoltIds);
+            CollectionAssert.AreEqual(new[] { 0, 1 }, coordinator.Attempt.DetachedBoltIds);
             var levelRotation = input.LevelRoot.rotation;
             var cameraPosition = camera.transform.position;
             var cameraRotation = camera.transform.rotation;
@@ -388,7 +394,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
             Assert.That(camera.transform.rotation, Is.EqualTo(cameraRotation));
             Assert.That(part.position, Is.EqualTo(partPosition));
-            Assert.That(coordinator.Attempt.ActiveTurns[2], Is.SameAs(turn));
+            Assert.That(coordinator.Attempt.ActiveTurns[1], Is.SameAs(turn));
 
             var oldScope = _scope;
             _scope.Container.Resolve<SceneNavigator>().RestartGameplay();
@@ -453,11 +459,10 @@ namespace Screw.Tests.Gameplay
                 if (phase >= 2)
                 {
                     yield return Finish(session.PlayAsync(0).AsTask());
-                    yield return Finish(session.PlayAsync(1).AsTask());
                 }
 
                 Time.timeScale = phase == 0 ? 0f : 1f;
-                var task = session.PlayAsync(phase >= 2 ? 2 : 0).AsTask();
+                var task = session.PlayAsync(phase >= 2 ? 1 : 0).AsTask();
                 var turn = session.Attempt.ActiveTurns.Values.SingleOrDefault();
                 if (phase >= 1)
                 {

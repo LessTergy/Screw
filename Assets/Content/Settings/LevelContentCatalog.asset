@@ -16,7 +16,7 @@ MonoBehaviour:
   _levels:
   - _number: 1
     _data: {fileID: 4900000, guid: a83307a729d45f9ecba06c5ae629e1c0, type: 3}
-    _prefab: {fileID: 9146264131602498474, guid: 71c72cfc7c24973269789b64bf01ede4,
+    _prefab: {fileID: 8063346519058048337, guid: 71c72cfc7c24973269789b64bf01ede4,
       type: 3}
   - _number: 2
     _data: {fileID: 4900000, guid: 40c1907faa643d4b6ad21d1205644a9d, type: 3}

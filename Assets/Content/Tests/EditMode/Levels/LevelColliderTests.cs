@@ -108,6 +108,7 @@ namespace Screw.Tests.Levels
         [Test]
         public void SavedGameplayUsesOnlyPrimitiveCollidersWithoutRigidbody()
         {
+            var modelPrefabPath = _view.ReadSource().SourcePrefab;
             foreach (var part in _view.Parts)
             {
                 var blockers = part.Node.GetComponentsInChildren<Collider>(true);
@@ -116,8 +117,7 @@ namespace Screw.Tests.Levels
                 {
                     var source = PrefabUtility.GetCorrespondingObjectFromOriginalSource(blocker);
                     Assert.That(source, Is.Not.Null, "Blocker must come from the common model prefab.");
-                    Assert.That(AssetDatabase.GetAssetPath(source), Is.EqualTo(
-                        "Assets/Content/3D/Levels/Models/modelbatch_lollipop_01/prefab/modelbatch_lollipop_01.prefab"));
+                    Assert.That(AssetDatabase.GetAssetPath(source), Is.EqualTo(modelPrefabPath));
                 }
             }
 
