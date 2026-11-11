@@ -1,0 +1,583 @@
+{
+  "blenderVersion": "5.2.3 LTS",
+  "glbSha256": "ee0e307635a0d8952ff2a6e4a994edbcffd577de738fc1da575550bf970b9ae7",
+  "parts": 8,
+  "anchors": 21,
+  "triangles": 14976,
+  "source": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 5164,
+        "geometryVertices": 2584,
+        "signedVolume": 220.845969,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 1956,
+        "geometryVertices": 980,
+        "signedVolume": 114.037529,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1020,
+        "geometryVertices": 512,
+        "signedVolume": 8.649794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 1020,
+        "geometryVertices": 512,
+        "signedVolume": 8.647801,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 2444,
+        "geometryVertices": 1224,
+        "signedVolume": 9.153695,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 968,
+        "geometryVertices": 486,
+        "signedVolume": 40.160794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 968,
+        "geometryVertices": 486,
+        "signedVolume": 40.160794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1436,
+        "geometryVertices": 720,
+        "signedVolume": 8.410108,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "separatingGap": 0.028055
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "separatingGap": 0.028055
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "separatingGap": 3.81
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "separatingGap": 0.105214
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "separatingGap": 4.78271
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "separatingGap": 4.783382
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "separatingGap": 0.037
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "separatingGap": 0.037
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "separatingGap": 1.32304
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "separatingGap": 0.65365
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "separatingGap": 4.78271
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "separatingGap": 2.437822
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "separatingGap": 1.914408
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "separatingGap": 0.652516
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "separatingGap": 2.437821
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "separatingGap": 4.783382
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "separatingGap": 0.692711
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "separatingGap": 5.225024
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "separatingGap": 3.552604
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "separatingGap": 0.152233
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "separatingGap": 1.807494
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "blockingPartId": 5
+      },
+      {
+        "boltId": 4,
+        "blockingPartId": 6
+      }
+    ]
+  },
+  "reimportedGlb": {
+    "meshes": [
+      {
+        "partId": 0,
+        "triangles": 5164,
+        "geometryVertices": 2584,
+        "signedVolume": 220.845969,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 1,
+        "triangles": 1956,
+        "geometryVertices": 980,
+        "signedVolume": 114.037529,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 2,
+        "triangles": 1020,
+        "geometryVertices": 512,
+        "signedVolume": 8.649794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 3,
+        "triangles": 1020,
+        "geometryVertices": 512,
+        "signedVolume": 8.647801,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 4,
+        "triangles": 2444,
+        "geometryVertices": 1224,
+        "signedVolume": 9.153695,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 5,
+        "triangles": 968,
+        "geometryVertices": 486,
+        "signedVolume": 40.160794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 6,
+        "triangles": 968,
+        "geometryVertices": 486,
+        "signedVolume": 40.160794,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      },
+      {
+        "partId": 7,
+        "triangles": 1436,
+        "geometryVertices": 720,
+        "signedVolume": 8.410108,
+        "nonManifoldEdges": 0,
+        "degenerateTriangles": 0,
+        "status": "passed"
+      }
+    ],
+    "pairwiseSeparation": [
+      {
+        "partIds": [
+          0,
+          1
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          2
+        ],
+        "separatingGap": 0.028055
+      },
+      {
+        "partIds": [
+          0,
+          3
+        ],
+        "separatingGap": 0.028055
+      },
+      {
+        "partIds": [
+          0,
+          4
+        ],
+        "separatingGap": 3.81
+      },
+      {
+        "partIds": [
+          0,
+          5
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          6
+        ],
+        "separatingGap": 0.042
+      },
+      {
+        "partIds": [
+          0,
+          7
+        ],
+        "separatingGap": 0.105214
+      },
+      {
+        "partIds": [
+          1,
+          2
+        ],
+        "separatingGap": 4.78271
+      },
+      {
+        "partIds": [
+          1,
+          3
+        ],
+        "separatingGap": 4.783382
+      },
+      {
+        "partIds": [
+          1,
+          4
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          1,
+          5
+        ],
+        "separatingGap": 0.037
+      },
+      {
+        "partIds": [
+          1,
+          6
+        ],
+        "separatingGap": 0.037
+      },
+      {
+        "partIds": [
+          1,
+          7
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          2,
+          3
+        ],
+        "separatingGap": 1.32304
+      },
+      {
+        "partIds": [
+          2,
+          4
+        ],
+        "separatingGap": 0.65365
+      },
+      {
+        "partIds": [
+          2,
+          5
+        ],
+        "separatingGap": 4.78271
+      },
+      {
+        "partIds": [
+          2,
+          6
+        ],
+        "separatingGap": 2.437822
+      },
+      {
+        "partIds": [
+          2,
+          7
+        ],
+        "separatingGap": 1.914408
+      },
+      {
+        "partIds": [
+          3,
+          4
+        ],
+        "separatingGap": 0.652516
+      },
+      {
+        "partIds": [
+          3,
+          5
+        ],
+        "separatingGap": 2.437821
+      },
+      {
+        "partIds": [
+          3,
+          6
+        ],
+        "separatingGap": 4.783382
+      },
+      {
+        "partIds": [
+          3,
+          7
+        ],
+        "separatingGap": 0.692711
+      },
+      {
+        "partIds": [
+          4,
+          5
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          4,
+          6
+        ],
+        "surfaceIntersection": false
+      },
+      {
+        "partIds": [
+          4,
+          7
+        ],
+        "separatingGap": 5.225024
+      },
+      {
+        "partIds": [
+          5,
+          6
+        ],
+        "separatingGap": 3.552604
+      },
+      {
+        "partIds": [
+          5,
+          7
+        ],
+        "separatingGap": 0.152233
+      },
+      {
+        "partIds": [
+          6,
+          7
+        ],
+        "separatingGap": 1.807494
+      }
+    ],
+    "independentHiddenBolts": [
+      {
+        "boltId": 3,
+        "blockingPartId": 5
+      },
+      {
+        "boltId": 4,
+        "blockingPartId": 6
+      }
+    ]
+  },
+  "reference": "ArtSource/References/CalicoCat/Reference-C-FourViews.png",
+  "weldTolerance": 1e-05,
+  "surfaceTolerance": 0.0001,
+  "areaTolerance": 1e-08,
+  "markerOwnerSurfaceAndOrientation": "passed",
+  "gameBoltFit": "not_checked",
+  "unityColliders": "not_checked",
+  "unityGameplay": "not_checked"
+}
