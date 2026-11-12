@@ -1,0 +1,328 @@
+{
+  "number": 2,
+  "sourceCampaignIndex": 1,
+  "sourceModelId": 155712109,
+  "sourceName": "AlarmClockCReference",
+  "modelPosition": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "modelEulerDegrees": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "rootEulerDegrees": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "modelScale": 1.0,
+  "rootScale": 1.0,
+  "allowedBoltPaletteIndices": [
+    1,
+    2
+  ],
+  "parts": [
+    {
+      "id": 0,
+      "childIndex": 0,
+      "sourceLayer": 0,
+      "boltIds": [
+        5,
+        11
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_000_FlaredStand.001",
+      "nodePath": "Assembly/Model/Part_000_FlaredStand.001"
+    },
+    {
+      "id": 1,
+      "childIndex": 1,
+      "sourceLayer": 0,
+      "boltIds": [
+        6,
+        7,
+        8
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_001_OctagonCase.002",
+      "nodePath": "Assembly/Model/Part_001_OctagonCase.002"
+    },
+    {
+      "id": 2,
+      "childIndex": 2,
+      "sourceLayer": 0,
+      "boltIds": [
+        0,
+        1
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_002_Dial.003",
+      "nodePath": "Assembly/Model/Part_002_Dial.003"
+    },
+    {
+      "id": 3,
+      "childIndex": 3,
+      "sourceLayer": 0,
+      "boltIds": [
+        3,
+        9
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_003_LeftBell.003",
+      "nodePath": "Assembly/Model/Part_003_LeftBell.003"
+    },
+    {
+      "id": 4,
+      "childIndex": 4,
+      "sourceLayer": 0,
+      "boltIds": [
+        4,
+        10
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_004_RightBell.003",
+      "nodePath": "Assembly/Model/Part_004_RightBell.003"
+    },
+    {
+      "id": 5,
+      "childIndex": 5,
+      "sourceLayer": 0,
+      "boltIds": [
+        2
+      ],
+      "sourceReleaseForce": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sourceSpin": false,
+      "name": "Part_005_JoinedHands.002",
+      "nodePath": "Assembly/Model/Part_005_JoinedHands.002"
+    }
+  ],
+  "bolts": [
+    {
+      "id": 0,
+      "ownerId": 2,
+      "position": [
+        2.4000000953674316,
+        4.25,
+        2.3859999179840088
+      ],
+      "eulerDegrees": [
+        1.9318693375680596E-05,
+        0.0,
+        0.0
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_000_Owner_002.004"
+    },
+    {
+      "id": 1,
+      "ownerId": 2,
+      "position": [
+        -2.4000000953674316,
+        4.25,
+        2.3859999179840088
+      ],
+      "eulerDegrees": [
+        1.9318693375680596E-05,
+        0.0,
+        0.0
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_001_Owner_002.004"
+    },
+    {
+      "id": 2,
+      "ownerId": 5,
+      "position": [
+        0.0,
+        5.6599998474121094,
+        3.0469999313354492
+      ],
+      "eulerDegrees": [
+        1.9318693375680596E-05,
+        0.0,
+        0.0
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_002_Owner_005.002"
+    },
+    {
+      "id": 3,
+      "ownerId": 3,
+      "position": [
+        3.6542160511016846,
+        9.9747495651245117,
+        1.428400993347168
+      ],
+      "eulerDegrees": [
+        358.74765014648438,
+        14.859245300292969,
+        -6.8051343760089367E-07
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_003_Owner_003.003"
+    },
+    {
+      "id": 4,
+      "ownerId": 4,
+      "position": [
+        -3.6542160511016846,
+        9.9747495651245117,
+        1.428400993347168
+      ],
+      "eulerDegrees": [
+        358.74765014648438,
+        345.1407470703125,
+        -2.98892155115027E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_004_Owner_004.004"
+    },
+    {
+      "id": 5,
+      "ownerId": 0,
+      "position": [
+        1.3500000238418579,
+        0.72052818536758423,
+        2.0569291114807129
+      ],
+      "eulerDegrees": [
+        344.68719482421875,
+        0.0,
+        0.0
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_005_Owner_000.003"
+    },
+    {
+      "id": 6,
+      "ownerId": 1,
+      "position": [
+        2.5,
+        6.5999999046325684,
+        -1.7719999551773071
+      ],
+      "eulerDegrees": [
+        -5.4737108807134324E-14,
+        180.0,
+        -2.5044780613825424E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_006_Owner_001.004"
+    },
+    {
+      "id": 7,
+      "ownerId": 1,
+      "position": [
+        -2.5,
+        6.5999999046325684,
+        -1.7719999551773071
+      ],
+      "eulerDegrees": [
+        -5.4737108807134324E-14,
+        180.0,
+        -2.5044780613825424E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_007_Owner_001.004"
+    },
+    {
+      "id": 8,
+      "ownerId": 1,
+      "position": [
+        0.0,
+        3.3499999046325684,
+        -1.7719999551773071
+      ],
+      "eulerDegrees": [
+        -5.4737108807134324E-14,
+        180.0,
+        -2.5044780613825424E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_008_Owner_001.003"
+    },
+    {
+      "id": 9,
+      "ownerId": 3,
+      "position": [
+        3.053663969039917,
+        10.330219268798828,
+        -1.4522967338562012
+      ],
+      "eulerDegrees": [
+        339.73873901367188,
+        176.05439758300781,
+        -5.1192387218179647E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_009_Owner_003.004"
+    },
+    {
+      "id": 10,
+      "ownerId": 4,
+      "position": [
+        -3.053663969039917,
+        10.330219268798828,
+        -1.4522964954376221
+      ],
+      "eulerDegrees": [
+        339.73873901367188,
+        183.94560241699219,
+        5.6880430747696664E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_010_Owner_004.003"
+    },
+    {
+      "id": 11,
+      "ownerId": 0,
+      "position": [
+        -1.3500000238418579,
+        0.72052818536758423,
+        -2.0569291114807129
+      ],
+      "eulerDegrees": [
+        344.68719482421875,
+        180.0,
+        -2.5044780613825424E-06
+      ],
+      "sourceWhitelist": "",
+      "nodePath": "Assembly/Bolts/Bolt_011_Owner_000.003"
+    }
+  ],
+  "sourcePrefab": "Assets/Content/Levels/AlarmClock/Model.prefab",
+  "prefab": "Assets/Content/Levels/AlarmClock/AlarmClock.prefab",
+  "glb": "Assets/Content/Levels/AlarmClock/Model.glb"
+}

@@ -61,10 +61,31 @@ namespace Screw.Editor.Levels
 
             var package = GeneratedLevelPackage.Read(folder);
             var palette = Load<BoltPalette>(BoltPalettePath);
+            var campaign = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
+            if (campaign != null)
+            {
+                foreach (var entry in campaign.Levels)
+                {
+                    var prefabPath = AssetDatabase.GetAssetPath(entry.Prefab);
+                    if (string.IsNullOrEmpty(prefabPath)
+                        || !prefabPath.StartsWith(LevelContentCatalogUtility.LevelsRoot + "/", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var levelFolder = prefabPath.Substring(0, prefabPath.LastIndexOf('/'));
+                    var report = AssetDatabase.LoadAssetAtPath<TextAsset>(levelFolder + ReportFile);
+                    if (report != null && (string)JObject.Parse(report.text)["manifestSha256"] == package.ManifestHash)
+                    {
+                        return ReadPreparedLevel(levelFolder, package, palette, campaign, entry.Number);
+                    }
+                }
+            }
+
             var finalFolder = OutputRoot + "/" + package.Metadata.ModelName + "-" + package.ManifestHash.Substring(0, 12);
             if (Directory.Exists(finalFolder))
             {
-                return ReadPreparedDraft(finalFolder, package, palette);
+                return ReadPreparedLevel(finalFolder, package, palette);
             }
 
             var source = package.CreateSource(DraftLevelNumber, new[] { 1, 2 }, finalFolder);
@@ -112,7 +133,7 @@ namespace Screw.Editor.Levels
 
                 var error = AssetDatabase.MoveAsset(stage, finalFolder);
                 Require(string.IsNullOrEmpty(error), error);
-                var view = ReadPreparedDraft(finalFolder, package, palette);
+                var view = ReadPreparedLevel(finalFolder, package, palette);
                 published = true;
                 return view;
             }
@@ -299,25 +320,31 @@ namespace Screw.Editor.Levels
             return new double[] { color.r, color.g, color.b, color.a };
         }
 
-        private static GameObject ReadPreparedDraft(string folder, GeneratedLevelPackage package, BoltPalette palette)
+        private static GameObject ReadPreparedLevel(string folder, GeneratedLevelPackage package, BoltPalette palette,
+            LevelContentCatalog campaign = null, int number = DraftLevelNumber)
         {
             var report = JObject.Parse(Load<TextAsset>(folder + ReportFile).text);
             Require((string)report["status"] == "prepared" && (string)report["manifestSha256"] == package.ManifestHash
                 && string.Equals(GeneratedLevelPackage.Hash(File.ReadAllBytes(folder + "/Model.glb")),
                     package.ImportGlbHash, StringComparison.OrdinalIgnoreCase), "Папка занята другим или неполным импортом: " + folder);
-            var prefab = Load<GameObject>(folder + ViewFile);
+            var viewPath = campaign == null
+                ? folder + ViewFile
+                : PreparedLevelUtility.ViewPath(AssetDatabase.GetAssetPath(campaign.GetLevel(number).Prefab));
+            var prefab = Load<GameObject>(viewPath);
             var view = prefab.GetComponent<LevelView>();
             Require(view != null, "В подготовленном prefab отсутствует LevelView.");
             var source = view.ValidateBindings();
             var catalog = view.ContentCatalog;
-            Require(catalog.Levels.Count == 1 && catalog.Palette.All(entry => entry.Prefab == palette.Prefab)
+            Require(view.LevelNumber == number && (campaign == null ? catalog.Levels.Count == 1 : catalog == campaign),
+                "Подготовленный уровень использует другой каталог или номер: " + folder);
+            Require(catalog.Palette.All(entry => entry.Prefab == palette.Prefab)
                 && view.Bolts.All(bolt => PrefabUtility.GetCorrespondingObjectFromOriginalSource(bolt.Node.gameObject) == palette.Prefab),
-                "Черновик использует прежний prefab болта и требует повторной подготовки: " + folder);
+                "Уровень использует прежний prefab болта и требует повторной подготовки: " + folder);
             LevelContentCatalogUtility.ValidateReferences(catalog);
             Require(LevelDataReader.ReadCatalog(catalog.SourceCatalog.text).BoltDefaultPaletteIndex == palette.DefaultIndex
                 && palette.Colors.All(entry => catalog.GetColor(entry.Index).Primary == entry.Primary
                     && catalog.GetColor(entry.Index).Secondary == entry.Secondary),
-                "Черновик использует прежнюю палитру и требует повторной подготовки: " + folder);
+                "Уровень использует прежнюю палитру и требует повторной подготовки: " + folder);
             Require(view.Parts.All(part => part.Node.GetComponentsInChildren<BoxCollider>(true)
                 .Any(box => box.enabled && !box.isTrigger)), "В подготовленном prefab отсутствуют коллайдеры деталей.");
             LevelRouteData.Read(Load<TextAsset>(folder + RouteFile).text, source);

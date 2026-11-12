@@ -12,12 +12,6 @@ namespace Screw.Tests.Levels
             return AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
         }
 
-        public static LevelContentCatalog LoadCatDraft()
-        {
-            return AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(
-                "Assets/Content/GeneratedLevels/CalicoCatReferenceModel-bf7972dd715a/DraftCatalog.asset");
-        }
-
         public static LevelSourceData Source(int colors = 2)
         {
             var boltCount = colors * 6;

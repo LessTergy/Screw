@@ -222,7 +222,7 @@ namespace Screw.Tests.Levels
         public void BindingRejectsWrongSourceBeforeChangingExistingBindings()
         {
             LevelViewBindingUtility.Bind(_view);
-            var other = (GameObject)PrefabUtility.InstantiatePrefab(LevelTestFixtures.LoadCatDraft().GetLevel(1).Prefab);
+            var other = (GameObject)PrefabUtility.InstantiatePrefab(_catalog.GetLevel(5).Prefab);
             other.transform.SetParent(_wrapper.transform, false);
             using (var serialized = new SerializedObject(_view))
             {

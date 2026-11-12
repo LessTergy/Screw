@@ -10,7 +10,10 @@ namespace Screw.Editor.Levels
 {
     public sealed class LevelRouteData
     {
-        public const string LevelOnePath = "Assets/Content/Tests/Fixtures/LevelRoutes/Level_01.json";
+        public static string LevelOnePath
+        {
+            get { return PreparedLevelUtility.RoutePath(1); }
+        }
 
         [JsonProperty("schemaVersion", Required = Required.Always)] public int SchemaVersion;
         [JsonProperty("levelNumber", Required = Required.Always)] public int LevelNumber;

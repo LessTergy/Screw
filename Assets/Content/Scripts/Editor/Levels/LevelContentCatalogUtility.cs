@@ -11,6 +11,7 @@ namespace Screw.Editor.Levels
     public static class LevelContentCatalogUtility
     {
         public const string CatalogAssetPath = "Assets/Content/Settings/LevelContentCatalog.asset";
+        internal const string LevelsRoot = "Assets/Content/Levels";
 
         [MenuItem("Tools/Screw/Levels/Validate Campaign Content")]
         public static void ValidateCampaignContent()

@@ -18,6 +18,22 @@ MonoBehaviour:
     _data: {fileID: 4900000, guid: 8da587bb30f825040970558208872916, type: 3}
     _prefab: {fileID: 1912343467117360994, guid: c5d99543bdd34d74ba3a3734db7c9379,
       type: 3}
+  - _number: 2
+    _data: {fileID: 4900000, guid: 59839ef20e0c7ad4dab37fcc24edf014, type: 3}
+    _prefab: {fileID: 2495499543682075313, guid: 578d1fee19ae52f4d84d0cd3ae1d9ef0,
+      type: 3}
+  - _number: 3
+    _data: {fileID: 4900000, guid: d80a74e5b1aa5a84886ec91792bbd660, type: 3}
+    _prefab: {fileID: 1236961463390168445, guid: 794906cdbb4c6bf4eb7cb2dffdd5417b,
+      type: 3}
+  - _number: 4
+    _data: {fileID: 4900000, guid: 2fdb979ed69194d4db152edfa5e2b621, type: 3}
+    _prefab: {fileID: 6778394153482473878, guid: 4ee0e15caadce2041b1f535b6eef5ebe,
+      type: 3}
+  - _number: 5
+    _data: {fileID: 4900000, guid: afb4dc4d98736a94c9635f46f40aa86c, type: 3}
+    _prefab: {fileID: 2460971572753680934, guid: 8134db0ce4d3f76449f3e23fc5d67a30,
+      type: 3}
   _palette:
   - _index: 0
     _prefab: {fileID: 6600489689005180698, guid: 73d154368a8747f469f6983ce4a12468,

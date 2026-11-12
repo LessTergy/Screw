@@ -6,7 +6,7 @@
 
 03–04.11.2026 по поручению пользователя выполнена проверка через Unity MCP: 262 EditMode и 30 PlayMode тестов прошли, дополнительно проверены работающий Gameplay и настоящее UI-перекрытие. Исправлены тестовые данные повреждённого JSON и фоновое освещение Gameplay для читаемости задней стороны. [Результаты и границы проверки](p3-verification.md). Пользовательская приёмка и устройство остаются отдельными условиями Gate.
 
-Маршрут сохранён в `Assets/Content/Tests/Fixtures/LevelRoutes/Level_01.json`. Производственное описание — `Assets/Content/Settings/Levels/Level_01_Gameplay.asset`, тип LevelGameplayDefinition. Оно ссылается на существующий LevelContentCatalog и хранит LevelGameplayData. Номер уровня хранится только в Gameplay.LevelNumber; исходные JSON, меши, материалы и владельцы берутся из каталога. Производственное описание не ссылается на W.
+Маршрут `Level_Route.json` и игровое описание `Level_Gameplay.asset` лежат рядом с prefab уровня. Папку редактор находит по ссылке из общего LevelContentCatalog. Игровое описание хранит LevelGameplayData, включая номер уровня.
 
 ## Пространственный стенд
 

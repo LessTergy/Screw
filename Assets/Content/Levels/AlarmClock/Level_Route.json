@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "levelNumber": 2,
+  "camera": {
+    "fieldOfViewDegrees": 60.0,
+    "aspect": 0.5625
+  },
+  "steps": [
+    {
+      "boltId": 0,
+      "levelEulerDegrees": [
+        359.999969,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.37775743,
+        0.4473643
+      ]
+    },
+    {
+      "boltId": 1,
+      "levelEulerDegrees": [
+        359.999969,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.62224257,
+        0.4473643
+      ]
+    },
+    {
+      "boltId": 2,
+      "levelEulerDegrees": [
+        359.999969,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.5,
+        0.487487733
+      ]
+    },
+    {
+      "boltId": 3,
+      "levelEulerDegrees": [
+        1.29568481,
+        165.1444,
+        0.0
+      ],
+      "viewportPoint": [
+        0.333894551,
+        0.6108305
+      ]
+    },
+    {
+      "boltId": 4,
+      "levelEulerDegrees": [
+        1.29565942,
+        194.8556,
+        0.0
+      ],
+      "viewportPoint": [
+        0.6661095,
+        0.6108304
+      ]
+    },
+    {
+      "boltId": 5,
+      "levelEulerDegrees": [
+        15.3128185,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.435113549,
+        0.348554373
+      ]
+    },
+    {
+      "boltId": 6,
+      "levelEulerDegrees": [
+        180.0,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.371477425,
+        0.4851703
+      ]
+    },
+    {
+      "boltId": 7,
+      "levelEulerDegrees": [
+        180.0,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.6285226,
+        0.4851703
+      ]
+    },
+    {
+      "boltId": 8,
+      "levelEulerDegrees": [
+        180.0,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.5,
+        0.5791525
+      ]
+    },
+    {
+      "boltId": 9,
+      "levelEulerDegrees": [
+        159.694519,
+        176.298889,
+        0.0
+      ],
+      "viewportPoint": [
+        0.347916663,
+        0.399887323
+      ]
+    },
+    {
+      "boltId": 10,
+      "levelEulerDegrees": [
+        159.694519,
+        183.701111,
+        0.0
+      ],
+      "viewportPoint": [
+        0.652083337,
+        0.399887323
+      ]
+    },
+    {
+      "boltId": 11,
+      "levelEulerDegrees": [
+        164.6872,
+        180.0,
+        0.0
+      ],
+      "viewportPoint": [
+        0.566684,
+        0.662186742
+      ]
+    }
+  ]
+}

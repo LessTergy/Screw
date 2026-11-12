@@ -12,26 +12,31 @@ namespace Screw.Tests.Levels
     public sealed class LevelAssetTests
     {
         [Test]
-        public void DraftPrefabsMatchTheirCatalogsWithoutChangingAssets()
+        public void PublishedViewsAndRoutesMatchTheCampaign()
         {
-            var drafts = AssetDatabase.FindAssets("t:LevelContentCatalog", new[] { "Assets/Content/GeneratedLevels" });
-            Assert.That(drafts, Is.Not.Empty);
-            foreach (var guid in drafts)
+            var catalog = LevelTestFixtures.LoadCampaign();
+            foreach (var entry in catalog.Levels)
             {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var path = PreparedLevelUtility.ViewPath(entry.Number);
                 var before = AssetDatabase.GetAssetDependencyHash(path);
-                var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(path);
-                Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateReferences(catalog), path);
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                Assert.That(prefab, Is.Not.Null, path);
+                var view = prefab.GetComponent<LevelView>();
+                Assert.That(view.ContentCatalog, Is.SameAs(catalog), path);
+                Assert.That(view.LevelNumber, Is.EqualTo(entry.Number), path);
+                var source = view.ValidateBindings();
+                var route = LevelRouteData.Read(File.ReadAllText(PreparedLevelUtility.RoutePath(entry.Number)), source);
+                Assert.That(route.Steps, Has.Length.EqualTo(source.Bolts.Length), path);
                 Assert.That(AssetDatabase.GetAssetDependencyHash(path), Is.EqualTo(before), path);
             }
         }
 
         [Test]
-        public void GeneratedCampaignUsesOnlyItsLevelAndOwnBoltPalette()
+        public void CampaignUsesItsPublishedLevelsAndOwnBoltPalette()
         {
             var path = LevelContentCatalogUtility.CatalogAssetPath;
             var catalog = LevelTestFixtures.LoadCampaign();
-            Assert.That(catalog.Levels.Select(level => level.Number), Is.EqualTo(new[] { 1 }));
+            Assert.That(catalog.Levels.Select(level => level.Number), Is.EqualTo(new[] { 1, 2, 3, 4, 5 }));
             Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateReferences(catalog));
             Assert.That(catalog.Palette.Select(color => color.Prefab).Distinct().Count(), Is.EqualTo(1));
             Assert.That(catalog.GetColor(1).Primary.name, Is.EqualTo("01_Yellow_Body"));
@@ -59,7 +64,7 @@ namespace Screw.Tests.Levels
                         case "wrongJson":
                         {
                             level.FindPropertyRelative("_data").objectReferenceValue =
-                                LevelTestFixtures.LoadCatDraft().GetLevel(1).Data;
+                                catalog.GetLevel(5).Data;
                             break;
                         }
                         case "missingMaterial":

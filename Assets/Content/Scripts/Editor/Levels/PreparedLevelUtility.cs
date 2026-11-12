@@ -18,18 +18,35 @@ namespace Screw.Editor.Levels
             get
             {
                 var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
-                return catalog.Levels.Select(level => level.Number).Where(number => number > 1 && File.Exists(ViewPath(number)));
+                return catalog.Levels.Where(level => level.Number > 1 && File.Exists(ViewPath(AssetDatabase.GetAssetPath(level.Prefab))))
+                    .Select(level => level.Number);
             }
         }
 
         public static string ViewPath(int number)
         {
-            return "Assets/Content/Prefabs/Levels/Level_" + number.ToString("D2") + "_View.prefab";
+            return ViewPath(LevelPrefabPath(number));
+        }
+
+        internal static string ViewPath(string prefabPath)
+        {
+            return Path.ChangeExtension(prefabPath, null) + "View.prefab";
         }
 
         public static string RoutePath(int number)
         {
-            return "Assets/Content/Tests/Fixtures/LevelRoutes/Level_" + number.ToString("D2") + ".json";
+            return LevelFolder(number) + "/Level_Route.json";
+        }
+
+        internal static string LevelFolder(int number)
+        {
+            return Path.GetDirectoryName(LevelPrefabPath(number)).Replace('\\', '/');
+        }
+
+        private static string LevelPrefabPath(int number)
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
+            return AssetDatabase.GetAssetPath(catalog.GetLevel(number).Prefab);
         }
 
         public static LevelRouteData Prepare(int number)
@@ -51,7 +68,7 @@ namespace Screw.Editor.Levels
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             try
             {
-                var root = new GameObject("Level_" + number.ToString("D2") + "_View");
+                var root = new GameObject(Path.GetFileNameWithoutExtension(viewPath));
                 SceneManager.MoveGameObjectToScene(root, scene);
                 // shortcut: Shared Editor physics uses this offset; isolate physics if loaded content reaches it.
                 root.transform.position = Vector3.right * 1000f;

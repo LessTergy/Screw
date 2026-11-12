@@ -10,7 +10,10 @@ namespace Screw.Editor.Levels
 {
     public static class LevelGameplayDefinitionUtility
     {
-        public const string LevelOnePath = "Assets/Content/Settings/Levels/Level_01_Gameplay.asset";
+        public static string LevelOnePath
+        {
+            get { return PreparedLevelUtility.LevelFolder(1) + "/Level_Gameplay.asset"; }
+        }
 
         public static LevelGameplayData Build(LevelSourceData source, IReadOnlyList<int> route)
         {
@@ -74,7 +77,8 @@ namespace Screw.Editor.Levels
         [MenuItem("Tools/Screw/Levels/Create Level 01 Gameplay")]
         public static void CreateLevelOne()
         {
-            if (File.Exists(LevelOnePath) || AssetDatabase.LoadMainAssetAtPath(LevelOnePath) != null)
+            var path = LevelOnePath;
+            if (File.Exists(path) || AssetDatabase.LoadMainAssetAtPath(path) != null)
             {
                 throw new InvalidOperationException("Gameplay asset already exists; it was not overwritten.");
             }
@@ -83,15 +87,10 @@ namespace Screw.Editor.Levels
             var source = LevelDataReader.ReadLevel(catalog.GetLevel(1).Data.text, LevelDataReader.SupportedSchemaVersion);
             var route = LevelRouteData.Read(File.ReadAllText(LevelRouteData.LevelOnePath), source);
             var definition = Create(catalog, Build(source, route.Steps.Select(step => step.BoltId).ToArray()));
-            if (!AssetDatabase.IsValidFolder("Assets/Content/Settings/Levels"))
-            {
-                AssetDatabase.CreateFolder("Assets/Content/Settings", "Levels");
-            }
-
-            AssetDatabase.CreateAsset(definition, LevelOnePath);
+            AssetDatabase.CreateAsset(definition, path);
             AssetDatabase.SaveAssetIfDirty(definition);
             Selection.activeObject = definition;
-            Debug.Log("Created Level_01 gameplay from the saved spatial route: " + LevelOnePath);
+            Debug.Log("Created Level_01 gameplay from the saved spatial route: " + path);
         }
 
         private static void SetArray(SerializedProperty property, int[] values)
