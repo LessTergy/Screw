@@ -1,0 +1,491 @@
+{
+  "schemaVersion": 1,
+  "partCount": 4,
+  "boltCount": 9,
+  "boltDefaultPaletteIndex": 7,
+  "sourceCommit": "manifest-sha256:7b92d1f581ed92243b2d7b7756c07918bc6d4dc95d8682c5196749a12884de60",
+  "sourceUnityVersion": "2022.3.62f3",
+  "unityRenderPipeline": "Universal Render Pipeline",
+  "coordinateSystem": "Unity left-handed, Y up",
+  "boltColors": "Screw bolt palette",
+  "rootScreenRatio": 1.0,
+  "levels": [
+    {
+      "number": 1,
+      "sourceCampaignIndex": 0,
+      "sourceModelId": 129576224,
+      "sourceName": "PopsicleBlueberryCream",
+      "modelPosition": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "modelEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rootEulerDegrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "modelScale": 1.0,
+      "rootScale": 1.0,
+      "allowedBoltPaletteIndices": [
+        1,
+        2
+      ],
+      "parts": [
+        {
+          "id": 0,
+          "childIndex": 0,
+          "sourceLayer": 0,
+          "boltIds": [
+            0,
+            1
+          ],
+          "sourceReleaseForce": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sourceSpin": false,
+          "name": "Part_000_Top",
+          "nodePath": "Assembly/Model/Part_000_Top"
+        },
+        {
+          "id": 1,
+          "childIndex": 1,
+          "sourceLayer": 0,
+          "boltIds": [
+            2,
+            3
+          ],
+          "sourceReleaseForce": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sourceSpin": false,
+          "name": "Part_001_Middle",
+          "nodePath": "Assembly/Model/Part_001_Middle"
+        },
+        {
+          "id": 2,
+          "childIndex": 2,
+          "sourceLayer": 0,
+          "boltIds": [
+            4,
+            5,
+            6
+          ],
+          "sourceReleaseForce": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sourceSpin": false,
+          "name": "Part_002_Bottom",
+          "nodePath": "Assembly/Model/Part_002_Bottom"
+        },
+        {
+          "id": 3,
+          "childIndex": 3,
+          "sourceLayer": 0,
+          "boltIds": [
+            7,
+            8
+          ],
+          "sourceReleaseForce": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "sourceSpin": false,
+          "name": "Part_003_Stick",
+          "nodePath": "Assembly/Model/Part_003_Stick"
+        }
+      ],
+      "bolts": [
+        {
+          "id": 0,
+          "ownerId": 0,
+          "position": [
+            1.5702517032623291,
+            11.010096549987793,
+            1.3445663452148438
+          ],
+          "eulerDegrees": [
+            357.243408203125,
+            7.2369322776794434,
+            2.2170406737132E-06
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_000_Owner_000"
+        },
+        {
+          "id": 1,
+          "ownerId": 0,
+          "position": [
+            -0.92001992464065552,
+            11.900238037109375,
+            -1.3116532564163208
+          ],
+          "eulerDegrees": [
+            353.1512451171875,
+            180.57524108886719,
+            -6.61055491946172E-06
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_001_Owner_000"
+        },
+        {
+          "id": 2,
+          "ownerId": 1,
+          "position": [
+            -0.65001833438873291,
+            7.8300290107727051,
+            1.4621857404708862
+          ],
+          "eulerDegrees": [
+            359.16830444335938,
+            359.47467041015625,
+            -5.086491938754989E-08
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_002_Owner_001"
+        },
+        {
+          "id": 3,
+          "ownerId": 1,
+          "position": [
+            -3.425926685333252,
+            8.5501041412353516,
+            -0.00010179188393522054
+          ],
+          "eulerDegrees": [
+            357.02117919921875,
+            267.07867431640625,
+            9.6179473985102959E-07
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_003_Owner_001"
+        },
+        {
+          "id": 4,
+          "ownerId": 2,
+          "position": [
+            1.0801180601119995,
+            5.0697240829467773,
+            1.3962043523788452
+          ],
+          "eulerDegrees": [
+            7.9371657371521,
+            3.414386510848999,
+            1.3469247051034472E-07
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_004_Owner_002"
+        },
+        {
+          "id": 5,
+          "ownerId": 2,
+          "position": [
+            -1.15011727809906,
+            5.2197885513305664,
+            -1.4100369215011597
+          ],
+          "eulerDegrees": [
+            6.0566320419311523,
+            183.37980651855469,
+            -5.9294720813340973E-06
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_005_Owner_002"
+        },
+        {
+          "id": 6,
+          "ownerId": 2,
+          "position": [
+            3.3520581722259521,
+            5.7995800971984863,
+            9.6963274700101465E-05
+          ],
+          "eulerDegrees": [
+            12.121760368347168,
+            87.1576919555664,
+            4.8028409764810931E-06
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_006_Owner_002"
+        },
+        {
+          "id": 7,
+          "ownerId": 3,
+          "position": [
+            -4.2500654672039673E-05,
+            2.2300000190734863,
+            0.39899986982345581
+          ],
+          "eulerDegrees": [
+            1.4489404748019297E-05,
+            358.7823486328125,
+            -4.0767815789877204E-08
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_007_Owner_003"
+        },
+        {
+          "id": 8,
+          "ownerId": 3,
+          "position": [
+            4.2500654672039673E-05,
+            1.1699999570846558,
+            -0.39899986982345581
+          ],
+          "eulerDegrees": [
+            -4.77086450700881E-06,
+            178.78236389160156,
+            5.5598534345335793E-06
+          ],
+          "sourceWhitelist": "",
+          "nodePath": "Assembly/Bolts/Bolt_008_Owner_003"
+        }
+      ],
+      "sourcePrefab": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Model.prefab",
+      "prefab": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Level.prefab",
+      "glb": "Assets/Content/GeneratedLevels/PopsicleBlueberryCream-7b92d1f581ed/Model.glb"
+    }
+  ],
+  "boltPalette": [
+    {
+      "index": 0,
+      "primary": "Assets/Content/3D/Bolts/Materials/00_Red_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/00_Red_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.89411765336990356,
+        0.32156860828399658,
+        0.33333331346511841,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.57223528623580933,
+        0.20580390095710754,
+        0.21333330869674683,
+        1.0
+      ]
+    },
+    {
+      "index": 1,
+      "primary": "Assets/Content/3D/Bolts/Materials/01_Yellow_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/01_Yellow_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.929411768913269,
+        0.76470589637756348,
+        0.28235292434692383,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.59482347965240479,
+        0.48941177129745483,
+        0.18070584535598755,
+        1.0
+      ]
+    },
+    {
+      "index": 2,
+      "primary": "Assets/Content/3D/Bolts/Materials/02_Blue_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/02_Blue_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.2549019455909729,
+        0.47843128442764282,
+        0.87843137979507446,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.16313722729682922,
+        0.30619603395462036,
+        0.56219607591629028,
+        1.0
+      ]
+    },
+    {
+      "index": 3,
+      "primary": "Assets/Content/3D/Bolts/Materials/03_Green_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/03_Green_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.29803919792175293,
+        0.72156864404678345,
+        0.44313722848892212,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.19074505567550659,
+        0.4618038535118103,
+        0.28360781073570251,
+        1.0
+      ]
+    },
+    {
+      "index": 4,
+      "primary": "Assets/Content/3D/Bolts/Materials/04_Purple_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/04_Purple_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.572549045085907,
+        0.36862742900848389,
+        0.81960785388946533,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.36643135547637939,
+        0.23592153191566467,
+        0.52454894781112671,
+        1.0
+      ]
+    },
+    {
+      "index": 5,
+      "primary": "Assets/Content/3D/Bolts/Materials/05_Orange_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/05_Orange_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.92156863212585449,
+        0.53333330154418945,
+        0.24313721060752869,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.58980393409729,
+        0.3413332998752594,
+        0.15560778975486755,
+        1.0
+      ]
+    },
+    {
+      "index": 6,
+      "primary": "Assets/Content/3D/Bolts/Materials/06_Pink_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/06_Pink_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.90588235855102539,
+        0.466666579246521,
+        0.68235296010971069,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.579764723777771,
+        0.29866662621498108,
+        0.43670585751533508,
+        1.0
+      ]
+    },
+    {
+      "index": 7,
+      "primary": "Assets/Content/3D/Bolts/Materials/07_White_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/07_White_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.91372549533843994,
+        0.929411768913269,
+        0.94901961088180542,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.58478438854217529,
+        0.59482347965240479,
+        0.6073724627494812,
+        1.0
+      ]
+    },
+    {
+      "index": 8,
+      "primary": "Assets/Content/3D/Bolts/Materials/08_LightBlue_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/08_LightBlue_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.40392154455184937,
+        0.7764706015586853,
+        0.89411765336990356,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.25850978493690491,
+        0.49694108963012695,
+        0.57223528623580933,
+        1.0
+      ]
+    },
+    {
+      "index": 9,
+      "primary": "Assets/Content/3D/Bolts/Materials/09_Brown_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/09_Brown_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.615686297416687,
+        0.38823527097702026,
+        0.25098037719726563,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.39403918385505676,
+        0.24847051501274109,
+        0.16062742471694946,
+        1.0
+      ]
+    },
+    {
+      "index": 10,
+      "primary": "Assets/Content/3D/Bolts/Materials/10_BlueGray_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/10_BlueGray_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.45490193367004395,
+        0.5372549295425415,
+        0.64313727617263794,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.29113718867301941,
+        0.34384313225746155,
+        0.41160780191421509,
+        1.0
+      ]
+    },
+    {
+      "index": 11,
+      "primary": "Assets/Content/3D/Bolts/Materials/11_Gray_Body.mat",
+      "secondary": "Assets/Content/3D/Bolts/Materials/11_Gray_Recess.mat",
+      "prefab": "Assets/Content/3D/Bolts/PhillipsBolt.prefab",
+      "glb": "Assets/Content/3D/Bolts/PhillipsBolt.glb",
+      "primarySrgb": [
+        0.56470590829849243,
+        0.57647055387496948,
+        0.58431375026702881,
+        1.0
+      ],
+      "secondarySrgb": [
+        0.36141175031661987,
+        0.36894112825393677,
+        0.37396076321601868,
+        1.0
+      ]
+    }
+  ]
+}

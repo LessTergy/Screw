@@ -1,25 +1,24 @@
+using System;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using Screw.Editor.Levels;
 using Screw.Levels;
-using UnityEditor;
-using UnityEngine;
 
 namespace Screw.Tests.Levels
 {
     public sealed class LevelDataTests
     {
-        [TestCase(1, 4, 9)]
-        [TestCase(20, 54, 111)]
-        public void ReadRealLevelPreservesExportData(int number, int parts, int bolts)
+        [TestCase(false, 4, 9)]
+        [TestCase(true, 8, 21)]
+        public void ReadRealLevelPreservesExportData(bool draft, int parts, int bolts)
         {
-            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.LevelDataPath(number));
+            var catalog = draft ? LevelTestFixtures.LoadCatDraft() : LevelTestFixtures.LoadCampaign();
+            var asset = catalog.GetLevel(1).Data;
             var json = asset.text;
             var level = LevelDataReader.ReadLevel(json, 1);
-            Assert.That(level.Number, Is.EqualTo(number));
+            Assert.That(level.Number, Is.EqualTo(1));
             Assert.That(level.Parts.Length, Is.EqualTo(parts));
             Assert.That(level.Bolts.Length, Is.EqualTo(bolts));
             Assert.That(JToken.DeepEquals(JObject.Parse(json), JObject.FromObject(level)), Is.True);
@@ -27,16 +26,16 @@ namespace Screw.Tests.Levels
         }
 
         [Test]
-        public void ReadCatalogPreservesAllLevelsAndPaletteOrder()
+        public void ReadCampaignCatalogPreservesTotalsAndPaletteOrder()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.ContentRoot + "/Data/catalog.json");
+            var asset = LevelTestFixtures.LoadCampaign().SourceCatalog;
             var catalog = LevelDataReader.ReadCatalog(asset.text);
-            Assert.That(catalog.Levels.Length, Is.EqualTo(20));
-            Assert.That(catalog.PartCount, Is.EqualTo(692));
-            Assert.That(catalog.BoltCount, Is.EqualTo(1611));
-            CollectionAssert.AreEqual(new[] { 1, 2 }, catalog.Levels.Single(level => level.Number == 1).AllowedBoltPaletteIndices);
-            CollectionAssert.AreEqual(new[] { 7, 6, 8, 5, 3 }, catalog.Levels.Single(level => level.Number == 2).AllowedBoltPaletteIndices);
-            Assert.That(catalog.BoltPalette.Single(color => color.Index == 1).Primary, Does.EndWith("2_yellow_1.mat"));
+            Assert.That(catalog.Levels.Length, Is.EqualTo(1));
+            Assert.That(catalog.PartCount, Is.EqualTo(4));
+            Assert.That(catalog.BoltCount, Is.EqualTo(9));
+            CollectionAssert.AreEqual(new[] { 1, 2 }, catalog.Levels[0].AllowedBoltPaletteIndices);
+            CollectionAssert.AreEqual(Enumerable.Range(0, 12), catalog.BoltPalette.Select(color => color.Index));
+            Assert.That(catalog.BoltPalette[1].Primary, Does.EndWith("01_Yellow_Body.mat"));
         }
 
         [TestCase(null)]
@@ -89,7 +88,7 @@ namespace Screw.Tests.Levels
         {
             var json = JsonConvert.SerializeObject(LevelTestFixtures.Source());
             Assert.Throws<InvalidDataException>(() => LevelDataReader.ReadLevel(json, version));
-            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.ContentRoot + "/Data/catalog.json");
+            var asset = LevelTestFixtures.LoadCampaign().SourceCatalog;
             var catalog = JObject.Parse(asset.text);
             catalog["schemaVersion"] = version;
             Assert.Throws<InvalidDataException>(() => LevelDataReader.ReadCatalog(catalog.ToString()));
@@ -168,6 +167,23 @@ namespace Screw.Tests.Levels
             Assert.Throws<InvalidDataException>(() => LevelDataValidator.ValidateLevel(source));
         }
 
+        [Test]
+        public void CatalogValidationAcceptsOneLevelAndRejectsEmptyOrSkippedNumbers()
+        {
+            var json = LevelTestFixtures.LoadCampaign().SourceCatalog.text;
+            var catalog = LevelDataReader.ReadCatalog(json);
+            Assert.DoesNotThrow(() => LevelDataValidator.ValidateCatalog(catalog));
+
+            catalog.Levels[0].Number = 2;
+            catalog.Levels[0].SourceCampaignIndex = 1;
+            Assert.Throws<InvalidDataException>(() => LevelDataValidator.ValidateCatalog(catalog));
+
+            catalog.Levels = Array.Empty<LevelSourceData>();
+            catalog.PartCount = 0;
+            catalog.BoltCount = 0;
+            Assert.Throws<InvalidDataException>(() => LevelDataValidator.ValidateCatalog(catalog));
+        }
+
         [TestCase("partCount")]
         [TestCase("boltCount")]
         [TestCase("duplicateLevel")]
@@ -176,13 +192,19 @@ namespace Screw.Tests.Levels
         [TestCase("nonFiniteColor")]
         public void CatalogValidationRejectsBrokenTotalsAndReferences(string defect)
         {
-            var json = AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.ContentRoot + "/Data/catalog.json").text;
+            var json = LevelTestFixtures.LoadCampaign().SourceCatalog.text;
             var source = LevelDataReader.ReadCatalog(json);
             switch (defect)
             {
                 case "partCount": { source.PartCount++; break; }
                 case "boltCount": { source.BoltCount++; break; }
-                case "duplicateLevel": { source.Levels[1] = source.Levels[0]; break; }
+                case "duplicateLevel":
+                {
+                    source.Levels = new[] { source.Levels[0], source.Levels[0] };
+                    source.PartCount *= 2;
+                    source.BoltCount *= 2;
+                    break;
+                }
                 case "duplicatePalette": { source.BoltPalette[1].Index = source.BoltPalette[0].Index; break; }
                 case "defaultPalette": { source.BoltDefaultPaletteIndex = 12; break; }
                 case "nonFiniteColor": { source.BoltPalette[0].PrimarySrgb[0] = float.PositiveInfinity; break; }

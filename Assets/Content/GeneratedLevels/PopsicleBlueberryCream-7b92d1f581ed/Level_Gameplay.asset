@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ada5fa9bd46158c428e6dba6fc6872f2, type: 3}
   m_Name: Level_Gameplay
   m_EditorClassIdentifier: 
-  _contentCatalog: {fileID: 11400000, guid: e6732d7e7d7557648ac4a4f82d5daa18, type: 2}
+  _contentCatalog: {fileID: 11400000, guid: cde662871c9c5c547a79c0687cd8dc64, type: 2}
   _gameplay:
     LevelNumber: 1
     ColorGroups:

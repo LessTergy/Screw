@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -12,53 +11,43 @@ namespace Screw.Tests.Levels
 {
     public sealed class LevelAssetTests
     {
-        public static IEnumerable<int> LevelNumbers
+        [Test]
+        public void DraftPrefabsMatchTheirCatalogsWithoutChangingAssets()
         {
-            get { return Enumerable.Range(1, 20); }
-        }
-
-        [TestCaseSource(nameof(LevelNumbers))]
-        public void SourcePrefabMatchesItsData(int number)
-        {
-            var path = LevelContentCatalogUtility.LevelPrefabPath(number);
-            var before = AssetDatabase.GetAssetDependencyHash(path);
-            var source = LevelDataReader.ReadLevel(
-                AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.LevelDataPath(number)).text, 1);
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateLevelPrefab(source, prefab));
-            Assert.That(AssetDatabase.GetAssetDependencyHash(path), Is.EqualTo(before));
+            var drafts = AssetDatabase.FindAssets("t:LevelContentCatalog", new[] { "Assets/Content/GeneratedLevels" });
+            Assert.That(drafts, Is.Not.Empty);
+            foreach (var guid in drafts)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var before = AssetDatabase.GetAssetDependencyHash(path);
+                var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(path);
+                Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateReferences(catalog), path);
+                Assert.That(AssetDatabase.GetAssetDependencyHash(path), Is.EqualTo(before), path);
+            }
         }
 
         [Test]
-        public void ImportedReferencesUseCurrentPathsAndBothPaletteSlots()
+        public void GeneratedCampaignUsesOnlyItsLevelAndOwnBoltPalette()
         {
-            var catalog = LevelContentCatalogUtility.CreateImportedCatalog();
-            try
-            {
-                Assert.That(catalog.Levels.Count, Is.EqualTo(20));
-                Assert.That(catalog.Palette.Count, Is.EqualTo(12));
-                Assert.That(AssetDatabase.GetAssetPath(catalog.GetLevel(1).Prefab),
-                    Is.EqualTo("Assets/Content/3D/Levels/Prefabs/Level_01.prefab"));
-                Assert.That(catalog.GetColor(1).Primary.name, Is.EqualTo("2_yellow_1"));
-                Assert.That(catalog.GetColor(1).Secondary.name, Is.EqualTo("2_yellow_2"));
-                Assert.That(AssetDatabase.GetAssetPath(catalog), Is.Empty);
-                Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateReferences(catalog));
-            }
-            finally
-            {
-                Object.DestroyImmediate(catalog);
-            }
+            var path = LevelContentCatalogUtility.CatalogAssetPath;
+            var catalog = LevelTestFixtures.LoadCampaign();
+            Assert.That(catalog.Levels.Select(level => level.Number), Is.EqualTo(new[] { 1 }));
+            Assert.DoesNotThrow(() => LevelContentCatalogUtility.ValidateReferences(catalog));
+            Assert.That(catalog.Palette.Select(color => color.Prefab).Distinct().Count(), Is.EqualTo(1));
+            Assert.That(catalog.GetColor(1).Primary.name, Is.EqualTo("01_Yellow_Body"));
+            Assert.That(catalog.GetColor(2).Primary.name, Is.EqualTo("02_Blue_Body"));
+            Assert.That(AssetDatabase.GetDependencies(path, true)
+                .Any(asset => asset.StartsWith("Assets/Content/3D/Levels/")), Is.False);
         }
 
         [TestCase("missingPrefab")]
         [TestCase("wrongJson")]
-        [TestCase("duplicateLevel")]
         [TestCase("missingMaterial")]
         [TestCase("invalidPaletteIndex")]
         [TestCase("duplicatePaletteIndex")]
         public void ReferenceValidationRejectsMissingOrMismatchedAssets(string defect)
         {
-            var catalog = LevelContentCatalogUtility.CreateImportedCatalog();
+            var catalog = Object.Instantiate(LevelTestFixtures.LoadCampaign());
             try
             {
                 using (var serialized = new SerializedObject(catalog))
@@ -70,13 +59,7 @@ namespace Screw.Tests.Levels
                         case "wrongJson":
                         {
                             level.FindPropertyRelative("_data").objectReferenceValue =
-                                AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.LevelDataPath(2));
-                            break;
-                        }
-                        case "duplicateLevel":
-                        {
-                            serialized.FindProperty("_levels").GetArrayElementAtIndex(1)
-                                .FindPropertyRelative("_number").intValue = 1;
+                                LevelTestFixtures.LoadCatDraft().GetLevel(1).Data;
                             break;
                         }
                         case "missingMaterial":
@@ -113,9 +96,9 @@ namespace Screw.Tests.Levels
         [Test]
         public void PrefabValidationRejectsWrongNodePathAndChildIndex()
         {
-            var source = LevelDataReader.ReadLevel(
-                AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.LevelDataPath(1)).text, 1);
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LevelContentCatalogUtility.LevelPrefabPath(1));
+            var entry = LevelTestFixtures.LoadCampaign().GetLevel(1);
+            var source = LevelDataReader.ReadLevel(entry.Data.text, 1);
+            var prefab = entry.Prefab;
             var firstIndex = source.Parts[0].ChildIndex;
             source.Parts[0].ChildIndex = source.Parts[1].ChildIndex;
             source.Parts[1].ChildIndex = firstIndex;
@@ -130,11 +113,11 @@ namespace Screw.Tests.Levels
         [Test]
         public void PrefabValidationRejectsMissingMeshWithoutChangingSource()
         {
-            var path = LevelContentCatalogUtility.LevelPrefabPath(1);
+            var entry = LevelTestFixtures.LoadCampaign().GetLevel(1);
+            var path = AssetDatabase.GetAssetPath(entry.Prefab);
             var before = AssetDatabase.GetAssetDependencyHash(path);
-            var source = LevelDataReader.ReadLevel(
-                AssetDatabase.LoadAssetAtPath<TextAsset>(LevelContentCatalogUtility.LevelDataPath(1)).text, 1);
-            var instance = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+            var source = LevelDataReader.ReadLevel(entry.Data.text, 1);
+            var instance = Object.Instantiate(entry.Prefab);
             try
             {
                 var filter = instance.transform.Find(source.Parts[0].NodePath).GetComponent<MeshFilter>();

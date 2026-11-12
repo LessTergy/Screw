@@ -11,7 +11,6 @@ namespace Screw.Tests.Levels
     public sealed class LevelColliderTests
     {
         private const string GameplayPath = "Assets/Content/Scenes/Gameplay.unity";
-        private const string BoltPrefabPath = "Assets/Content/3D/Levels/Bolts/Prefabs/Bolt_07.prefab";
         private Scene _sourceScene;
         private bool _openedHere;
         private LevelView _view;
@@ -36,7 +35,9 @@ namespace Screw.Tests.Levels
                     .SelectMany(root => root.GetComponentsInChildren<GameplayLifetimeScope>()).Single().LevelView;
                 Assert.That(_view, Is.Not.Null);
                 _view.ValidateBindings();
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoltPrefabPath);
+                var catalog = _view.ContentCatalog;
+                var source = LevelDataReader.ReadCatalog(catalog.SourceCatalog.text);
+                var prefab = catalog.GetColor(source.BoltDefaultPaletteIndex).Prefab;
                 Assert.That(prefab, Is.Not.Null);
                 _baseHead = prefab.GetComponent<BoxCollider>();
                 Assert.That(_baseHead, Is.Not.Null, "The shared head collider must be on the bolt prefab root.");
@@ -90,7 +91,7 @@ namespace Screw.Tests.Levels
         }
 
         [Test]
-        public void EveryImportedLevelInheritsTheSameHeadCollider()
+        public void EveryCampaignLevelInheritsTheSameHeadCollider()
         {
             Assert.That(_view.ContentCatalog.Levels, Is.Not.Empty);
             foreach (var level in _view.ContentCatalog.Levels)

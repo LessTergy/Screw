@@ -1,10 +1,23 @@
 using System.Linq;
+using Screw.Editor.Levels;
 using Screw.Levels;
+using UnityEditor;
 
 namespace Screw.Tests.Levels
 {
     internal static class LevelTestFixtures
     {
+        public static LevelContentCatalog LoadCampaign()
+        {
+            return AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
+        }
+
+        public static LevelContentCatalog LoadCatDraft()
+        {
+            return AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(
+                "Assets/Content/GeneratedLevels/CalicoCatReferenceModel-bf7972dd715a/DraftCatalog.asset");
+        }
+
         public static LevelSourceData Source(int colors = 2)
         {
             var boltCount = colors * 6;
@@ -43,8 +56,8 @@ namespace Screw.Tests.Levels
                 AllowedBoltPaletteIndices = new[] { 7, 6, 8, 5, 3, 0, 1, 2, 4, 9 }.Take(colors).ToArray(),
                 Parts = parts,
                 Bolts = bolts,
-                SourcePrefab = "Assets/UnscrewFirst20/Fixture.prefab",
-                Prefab = "Assets/UnscrewFirst20/Level_01.prefab",
+                SourcePrefab = "Assets/Fixtures/Fixture.prefab",
+                Prefab = "Assets/Fixtures/Level_01.prefab",
                 Glb = "GLB/Level_01.glb"
             };
         }

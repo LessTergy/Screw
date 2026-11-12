@@ -20,7 +20,7 @@ namespace Screw.Tests.Levels
         [SetUp]
         public void SetUp()
         {
-            _catalog = LevelContentCatalogUtility.CreateImportedCatalog();
+            _catalog = Object.Instantiate(LevelTestFixtures.LoadCampaign());
             _wrapper = new GameObject("LevelViewTest");
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(_catalog.GetLevel(1).Prefab);
             instance.transform.SetParent(_wrapper.transform, false);
@@ -222,7 +222,7 @@ namespace Screw.Tests.Levels
         public void BindingRejectsWrongSourceBeforeChangingExistingBindings()
         {
             LevelViewBindingUtility.Bind(_view);
-            var other = (GameObject)PrefabUtility.InstantiatePrefab(_catalog.GetLevel(2).Prefab);
+            var other = (GameObject)PrefabUtility.InstantiatePrefab(LevelTestFixtures.LoadCatDraft().GetLevel(1).Prefab);
             other.transform.SetParent(_wrapper.transform, false);
             using (var serialized = new SerializedObject(_view))
             {

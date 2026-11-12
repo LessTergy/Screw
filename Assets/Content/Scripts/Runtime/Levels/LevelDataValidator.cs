@@ -16,7 +16,8 @@ namespace Screw.Levels
         {
             Require(catalog != null, "Catalog is missing.");
             Require(catalog.SchemaVersion == LevelDataReader.SupportedSchemaVersion, "Unsupported catalog schema.");
-            Require(catalog.Levels != null && catalog.Levels.Length == CampaignLevelCount, "Expected 20 source levels.");
+            Require(catalog.Levels != null && catalog.Levels.Length > 0 && catalog.Levels.Length <= CampaignLevelCount,
+                "Expected between 1 and " + CampaignLevelCount + " source levels.");
             Require(catalog.BoltPalette != null && catalog.BoltPalette.Length == PaletteSize, "Expected 12 palette entries.");
             Require(IsFinite(catalog.RootScreenRatio) && catalog.RootScreenRatio > 0, "Invalid root screen ratio.");
             Require(!string.IsNullOrWhiteSpace(catalog.SourceCommit)
@@ -29,6 +30,7 @@ namespace Screw.Levels
             foreach (var level in catalog.Levels)
             {
                 ValidateLevel(level);
+                Require(level.Number <= catalog.Levels.Length, "Level numbers must be contiguous from 1.");
                 Require(numbers.Add(level.Number), "Duplicate level number: " + level.Number + ".");
             }
 
