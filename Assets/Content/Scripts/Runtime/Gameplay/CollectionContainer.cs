@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Screw.Levels;
-using TMPro;
 using UnityEngine;
 
 namespace Screw.Gameplay
@@ -9,8 +8,7 @@ namespace Screw.Gameplay
     {
         [SerializeField] private Transform _panel;
         [SerializeField] private Transform[] _slots;
-        [SerializeField] private Renderer _body;
-        [SerializeField] private TMP_Text _counter;
+        [SerializeField] private SpriteRenderer _body;
 
         public Transform Panel
         {
@@ -29,18 +27,16 @@ namespace Screw.Gameplay
         {
             GroupId = groupId;
             Count = 0;
-            _counter.text = "0/3";
             _panel.gameObject.SetActive(groupId.HasValue);
             if (groupId.HasValue)
             {
-                _body.sharedMaterial = catalog.GetColor(palette[groupId.Value]).Primary;
+                _body.color = catalog.GetColor(palette[groupId.Value]).Primary.color;
             }
         }
 
         public void RecordArrival()
         {
             Count++;
-            _counter.text = Count + "/3";
         }
     }
 }

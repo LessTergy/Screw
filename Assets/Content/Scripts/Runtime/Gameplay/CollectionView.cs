@@ -1,19 +1,17 @@
 using System.Collections.Generic;
 using Screw.Levels;
-using TMPro;
 using UnityEngine;
 
 namespace Screw.Gameplay
 {
     public sealed class CollectionView : MonoBehaviour
     {
-        public const float BoltSlotScale = 0.18f;
-
         [SerializeField] private Camera _camera;
+        [SerializeField] private RectTransform _safeArea;
         [SerializeField] private CollectionContainer[] _containers;
+        [SerializeField] private Transform[] _lockedContainers;
         [SerializeField] private Transform _poolRoot;
         [SerializeField] private Transform[] _poolSlots;
-        [SerializeField] private TMP_Text _poolCounter;
         [SerializeField, Min(0.5f)] private float _cameraDepth = 2f;
 
         public Camera Camera
@@ -42,7 +40,6 @@ namespace Screw.Gameplay
             }
 
             PoolCount = 0;
-            _poolCounter.text = "0/5";
             RefreshLayout();
         }
 
@@ -57,7 +54,6 @@ namespace Screw.Gameplay
             if (destination.IsPool)
             {
                 PoolCount++;
-                _poolCounter.text = PoolCount + "/5";
             }
             else
             {
@@ -68,7 +64,6 @@ namespace Screw.Gameplay
         public void RecordPoolDeparture()
         {
             PoolCount--;
-            _poolCounter.text = PoolCount + "/5";
         }
 
         private void LateUpdate()
@@ -79,16 +74,25 @@ namespace Screw.Gameplay
         private void RefreshLayout()
         {
             var halfHeight = _cameraDepth * Mathf.Tan(_camera.fieldOfView * Mathf.Deg2Rad * 0.5f);
-            var halfWidth = halfHeight * _camera.aspect;
-            var unit = Mathf.Min(halfWidth, halfHeight * 0.65f);
-            for (var index = 0; index < _containers.Length; index++)
+            var halfSize = new Vector2(halfHeight * _camera.aspect, halfHeight);
+            var safeMin = Vector2.Scale(_safeArea.anchorMin * 2f - Vector2.one, halfSize);
+            var safeMax = Vector2.Scale(_safeArea.anchorMax * 2f - Vector2.one, halfSize);
+            var safeSize = safeMax - safeMin;
+            var centerX = (safeMin.x + safeMax.x) * 0.5f;
+            var rowY = safeMax.y - safeSize.y * 0.17f;
+            var count = _containers.Length + _lockedContainers.Length;
+            var rowWidth = Mathf.Min(safeSize.x * 0.96f, safeSize.y * 0.57f);
+            var cellWidth = rowWidth / count;
+            var unit = cellWidth / 0.64f;
+            for (var index = 0; index < count; index++)
             {
-                var node = _containers[index].transform;
-                node.localPosition = new Vector3((index == 0 ? -0.48f : 0.48f) * unit, 0.88f * halfHeight, _cameraDepth);
+                var node = index < _containers.Length ? _containers[index].transform : _lockedContainers[index - _containers.Length];
+                var x = centerX + (index + 0.5f) * cellWidth - rowWidth * 0.5f;
+                node.localPosition = new Vector3(x, rowY, _cameraDepth);
                 node.localScale = Vector3.one * unit;
             }
 
-            _poolRoot.localPosition = new Vector3(0f, 0.7f * halfHeight, _cameraDepth);
+            _poolRoot.localPosition = new Vector3(centerX, rowY - 0.425f * unit, _cameraDepth);
             _poolRoot.localScale = Vector3.one * unit;
         }
     }

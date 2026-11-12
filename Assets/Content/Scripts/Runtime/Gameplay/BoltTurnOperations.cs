@@ -11,6 +11,9 @@ namespace Screw.Gameplay
 {
     public sealed class BoltTurnOperations : MonoBehaviour, ITurnOperations
     {
+        private const float ContainerBoltScale = 0.25f;
+        private const float PoolBoltScale = 0.18f;
+
         [SerializeField] private CollectionView _collection;
         [SerializeField, Min(0.01f)] private float _detachDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _flightDuration = 0.25f;
@@ -65,7 +68,7 @@ namespace Screw.Gameplay
 
         public async UniTask ArriveAsync(AttemptTurn turn, CancellationToken cancellationToken)
         {
-            await Fly(_bolts[turn.BoltId], _collection.GetSlot(turn.Destination), cancellationToken);
+            await Fly(_bolts[turn.BoltId], turn.Destination, cancellationToken);
             _collection.RecordArrival(turn.Destination);
         }
 
@@ -81,7 +84,7 @@ namespace Screw.Gameplay
                 else if (step is PoolTransfer transfer)
                 {
                     _collection.RecordPoolDeparture();
-                    await Fly(_bolts[transfer.BoltId], _collection.GetSlot(transfer.Destination), cancellationToken);
+                    await Fly(_bolts[transfer.BoltId], transfer.Destination, cancellationToken);
                     _collection.RecordArrival(transfer.Destination);
                 }
                 else
@@ -91,27 +94,29 @@ namespace Screw.Gameplay
             }
         }
 
-        private async UniTask Fly(Transform bolt, Transform slot, CancellationToken cancellationToken)
+        private async UniTask Fly(Transform bolt, BoltDestination destination, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var slot = _collection.GetSlot(destination);
+            var scale = destination.IsPool ? PoolBoltScale : ContainerBoltScale;
             var cameraRoot = _collection.Camera.transform;
             bolt.SetParent(cameraRoot, true);
             var start = bolt.localPosition;
             var rotation = Quaternion.Euler(0f, 180f, 0f);
-            var position = -(rotation * (bolt.GetComponent<BoxCollider>().center * CollectionView.BoltSlotScale));
+            var position = -(rotation * (bolt.GetComponent<BoxCollider>().center * scale));
             var sequence = DOTween.Sequence();
             sequence.Append(DOTween.To(() => 0f, progress =>
             {
-                var destination = cameraRoot.InverseTransformPoint(slot.TransformPoint(position));
-                bolt.localPosition = Vector3.LerpUnclamped(start, destination, progress);
+                var target = cameraRoot.InverseTransformPoint(slot.TransformPoint(position));
+                bolt.localPosition = Vector3.LerpUnclamped(start, target, progress);
             }, 1f, _flightDuration).SetEase(Ease.InOutQuad));
             sequence.Join(bolt.DOLocalRotate(new Vector3(0f, 180f, 0f), _flightDuration).SetEase(Ease.InOutQuad));
-            sequence.Join(bolt.DOScale(Vector3.one * (slot.lossyScale.x * CollectionView.BoltSlotScale), _flightDuration));
+            sequence.Join(bolt.DOScale(Vector3.one * (slot.lossyScale.x * scale), _flightDuration));
             await Animate(sequence, cancellationToken);
             bolt.SetParent(slot, false);
             bolt.localPosition = position;
             bolt.localRotation = rotation;
-            bolt.localScale = Vector3.one * CollectionView.BoltSlotScale;
+            bolt.localScale = Vector3.one * scale;
         }
 
         private async UniTask Replace(ContainerChange change, CancellationToken cancellationToken)

@@ -118,7 +118,7 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(orbit.LevelRoot, Is.Null);
                     Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<Camera>(true)).Count(), Is.EqualTo(1));
                     var session = new SerializedObject(gameplay.GameplaySession);
-                    foreach (var field in new[] { "_restartButton", "_retryButton", "_nextButton", "_resultPanel", "_resultLabel" })
+                    foreach (var field in new[] { "_levelLabel", "_restartButton", "_retryButton", "_nextButton", "_resultPanel", "_resultLabel" })
                     {
                         Assert.That(session.FindProperty(field).objectReferenceValue, Is.Not.Null, field);
                     }

@@ -71,6 +71,27 @@ namespace Screw.Tests.Gameplay
             Assert.That(_collection.Containers.All(container => container.Slots.Count == 3), Is.True);
             Assert.That(_collection.PoolSlots.Count, Is.EqualTo(5));
             Assert.That(_collection.PoolCount, Is.Zero);
+            Assert.That(SessionReference<Text>("_levelLabel").text, Is.EqualTo("Уровень 1"));
+            Assert.That(_collection.GetComponentsInChildren<TMP_Text>(true), Is.Empty);
+            using (var view = new SerializedObject(_collection))
+            {
+                var safeArea = (RectTransform)view.FindProperty("_safeArea").objectReferenceValue;
+                Assert.That(safeArea.GetComponents<MonoBehaviour>().Any(component => component.GetType().FullName == "Crystal.SafeArea"), Is.True);
+                Assert.That(SessionReference<Text>("_levelLabel").transform.IsChildOf(safeArea), Is.True);
+                Assert.That(SessionReference<Button>("_restartButton").transform.IsChildOf(safeArea), Is.True);
+                var locked = view.FindProperty("_lockedContainers");
+                Assert.That(locked.arraySize, Is.EqualTo(2));
+                var previous = _collection.Containers[1].transform;
+                for (var index = 0; index < locked.arraySize; index++)
+                {
+                    var container = (Transform)locked.GetArrayElementAtIndex(index).objectReferenceValue;
+                    Assert.That(container.gameObject.activeInHierarchy, Is.True);
+                    Assert.That(container.localPosition.x, Is.GreaterThan(previous.localPosition.x));
+                    Assert.That(container.localPosition.y, Is.EqualTo(previous.localPosition.y));
+                    Assert.That(container.GetComponent<CollectionContainer>(), Is.Null);
+                    previous = container;
+                }
+            }
             Assert.That(attempt.Bolts.Values.Count(bolt => bolt.PaletteIndex == 1), Is.EqualTo(6));
             Assert.That(attempt.Bolts.Values.Count(bolt => bolt.PaletteIndex == 2), Is.EqualTo(3));
             AssertMaterialsAndIdentity(attempt);
@@ -79,7 +100,7 @@ namespace Screw.Tests.Gameplay
         }
 
         [UnityTest]
-        public IEnumerator CampaignLoadsEveryLevelOnceAndRetriesTheFinalLevel()
+        public IEnumerator CampaignPlaysEverySavedRouteAndRetriesTheFinalLevel()
         {
             var catalog = _scope.LevelView.ContentCatalog;
             var campaign = new CampaignProgress(catalog.Levels.Count);
@@ -104,6 +125,7 @@ namespace Screw.Tests.Gameplay
                         session.enabled = true;
                         Assert.That(campaign.CurrentLevelNumber, Is.EqualTo(entry.Number));
                         Assert.That(session.Attempt.LevelNumber, Is.EqualTo(entry.Number));
+                        Assert.That(SessionReference<Text>("_levelLabel").text, Is.EqualTo($"Уровень {entry.Number}"));
                         Assert.That(_scope.GameplayDefinition, Is.SameAs(entry.Gameplay));
                         Assert.That(_scope.LevelAnchor.GetComponentsInChildren<LevelView>(true).Length, Is.EqualTo(1));
                         Assert.That(_scope.SceneCamera.GetComponent<OrbitCamera>().LevelRoot, Is.SameAs(_scope.LevelView.transform));
@@ -114,19 +136,19 @@ namespace Screw.Tests.Gameplay
                         AssertStableVisualState(session.Attempt);
                         Assert.That(session.Attempt.DetachedBoltIds, Is.Empty);
 
-                        var route = LevelRouteData.Read(File.ReadAllText(PreparedLevelUtility.RoutePath(entry.Number)),
-                            _scope.LevelView.ReadSource());
+                        var attempt = session.Attempt;
+                        var view = _scope.LevelView;
+                        var route = FrameSavedRoute();
                         foreach (var step in route.Steps)
                         {
-                            var reservation = session.Attempt.ReserveBolt(step.BoltId);
-                            Assert.That(reservation.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
-                            Assert.That(session.Attempt.ConfirmDetachment(reservation.Turn), Is.True);
-                            Assert.That(session.Attempt.ConfirmArrival(reservation.Turn), Is.True);
-                            Assert.That(session.Attempt.CompleteTurn(reservation.Turn), Is.True);
+                            yield return PlayRouteStep(attempt, step);
+                            Assert.That(attempt.PoolCount, Is.Zero);
+                            AssertStableVisualState(attempt);
                         }
 
-                        Assert.That(session.Attempt.Status, Is.EqualTo(AttemptStatus.Won));
-                        yield return Finish(session.PlayAsync(route.Steps[0].BoltId).AsTask());
+                        Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Won));
+                        CollectionAssert.AreEquivalent(attempt.Bolts.Keys, attempt.CollectedBoltIds);
+                        Assert.That(view.Parts.All(part => part.Node == null), Is.True);
                         var isFinal = entry.Number == catalog.Levels.Count;
                         var next = SessionReference<Button>("_nextButton");
                         var retry = SessionReference<Button>("_retryButton");
@@ -146,6 +168,7 @@ namespace Screw.Tests.Gameplay
                             Click(next);
                         }
 
+                        Assert.That(next.interactable || retry.interactable, Is.False, "Result buttons must lock during reload.");
                         next.onClick.Invoke();
                         retry.onClick.Invoke();
                         yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
@@ -156,6 +179,8 @@ namespace Screw.Tests.Gameplay
                         Assert.That(oldView == null, Is.True);
                         Assert.That(campaign.PendingLevelNumber, Is.Null);
                         Assert.That(campaign.CurrentLevelNumber, Is.EqualTo(isFinal ? entry.Number : entry.Number + 1));
+                        Assert.That(SessionReference<Text>("_levelLabel").text,
+                            Is.EqualTo($"Уровень {campaign.CurrentLevelNumber}"));
                         Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
                         Assert.That(_scope.GameplaySession.Attempt.Status, Is.EqualTo(AttemptStatus.Active));
                     }
@@ -163,6 +188,87 @@ namespace Screw.Tests.Gameplay
                 finally
                 {
                     SceneManager.sceneLoaded -= CountGameplayLoads;
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RobotCanOverflowOrRecoverFromTheSameFullPool()
+        {
+            var catalog = _scope.LevelView.ContentCatalog;
+            var robot = catalog.Levels.Single(entry => entry.Gameplay.ReadSource().SourceName == "RetroRobot");
+            var campaign = new CampaignProgress(catalog.Levels.Count);
+            while (campaign.CurrentLevelNumber < robot.Number)
+            {
+                Assert.That(campaign.TryAdvance(campaign.CurrentLevelNumber, AttemptStatus.Won), Is.True);
+                campaign.CompleteTransition();
+            }
+
+            using (LifetimeScope.Enqueue(builder => builder.RegisterInstance(campaign)))
+            {
+                yield return LoadGameplay();
+                var prefix = new[] { 0, 1, 6, 7, 3, 8, 15, 16 };
+                for (var pass = 0; pass < 2; pass++)
+                {
+                    _scope.GameplaySession.enabled = true;
+                    var attempt = _scope.GameplaySession.Attempt;
+                    Assert.That(attempt.LevelNumber, Is.EqualTo(robot.Number));
+                    Assert.That(attempt.DetachedBoltIds, Is.Empty);
+                    Assert.That(attempt.PoolCount, Is.Zero);
+                    Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
+                    var route = FrameSavedRoute();
+                    var steps = route.Steps.ToDictionary(step => step.BoltId);
+                    for (var index = 0; index < prefix.Length; index++)
+                    {
+                        yield return PlayRouteStep(attempt, steps[prefix[index]]);
+                        Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
+                        Assert.That(attempt.PoolCount, Is.EqualTo(Mathf.Max(0, index - 2)));
+                        AssertStableVisualState(attempt);
+                    }
+
+                    CollectionAssert.AreEqual(new int?[] { 7, 3, 8, 15, 16 }, attempt.PoolSlots);
+                    Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
+                    if (pass == 0)
+                    {
+                        var sixth = _scope.LevelView.GetBolt(17).Node;
+                        var parent = sixth.parent;
+                        var localPosition = sixth.localPosition;
+                        var remaining = attempt.RemainingBoltsByPart.ToArray();
+                        TapRouteStep(steps[17]);
+                        Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Lost));
+                        Assert.That(attempt.ActiveTurns, Is.Empty);
+                        CollectionAssert.AreEqual(prefix, attempt.DetachedBoltIds);
+                        CollectionAssert.AreEqual(remaining, attempt.RemainingBoltsByPart.ToArray());
+                        Assert.That(sixth.GetComponent<Collider>().enabled && sixth.gameObject.activeInHierarchy, Is.True);
+                        Assert.That(sixth.parent, Is.SameAs(parent));
+                        Assert.That(sixth.localPosition, Is.EqualTo(localPosition));
+                        AssertResult("Нет места");
+                        Assert.That(SessionReference<Button>("_nextButton").gameObject.activeSelf, Is.False);
+
+                        var oldView = _scope.LevelView;
+                        Click(SessionReference<Button>("_retryButton"));
+                        yield return Wait(() => oldView == null, "Retry did not replace the robot.");
+                        yield return null;
+                        BindScope();
+                        continue;
+                    }
+
+                    yield return PlayRouteStep(attempt, steps[2]);
+                    Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
+                    Assert.That(attempt.PoolCount, Is.EqualTo(2));
+                    CollectionAssert.AreEquivalent(new int?[] { 15, 16 }, attempt.PoolSlots.Where(id => id.HasValue));
+                    CollectionAssert.IsSubsetOf(new[] { 7, 3, 8 }, attempt.CollectedBoltIds);
+                    AssertStableVisualState(attempt);
+
+                    foreach (var step in route.Steps.Where(step => !attempt.DetachedBoltIds.Contains(step.BoltId)))
+                    {
+                        yield return PlayRouteStep(attempt, step);
+                    }
+
+                    Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Won));
+                    Assert.That(attempt.PoolCount, Is.Zero);
+                    Assert.That(_scope.LevelView.Parts.All(part => part.Node == null), Is.True);
+                    AssertResult(robot.Number == catalog.Levels.Count ? "Кампания пройдена" : "Победа!");
                 }
             }
         }
@@ -206,10 +312,10 @@ namespace Screw.Tests.Gameplay
             yield return Finish(task);
             Assert.That(bolt.GetInstanceID(), Is.EqualTo(id));
             Assert.That(bolt.parent, Is.SameAs(_collection.GetSlot(turn.Destination)));
+            Assert.That(bolt.localScale, Is.EqualTo(Vector3.one * 0.25f));
             Assert.That(Vector3.Distance(bolt.TransformPoint(bolt.GetComponent<BoxCollider>().center), bolt.parent.position),
                 Is.LessThan(0.001f), "The head, rather than the shaft pivot, must align with the slot.");
             Assert.That(_collection.Containers[0].Count, Is.EqualTo(1));
-            Assert.That(_collection.Containers[0].Panel.GetComponentInChildren<TMP_Text>().text, Is.EqualTo("1/3"));
             CollectionAssert.AreEqual(new[] { 0 }, coordinator.Attempt.DetachedBoltIds);
             AssertMaterialsAndIdentity(coordinator.Attempt);
             AssertStableVisualState(coordinator.Attempt);
@@ -351,6 +457,7 @@ namespace Screw.Tests.Gameplay
                     yield return PlayAndFinish(coordinator, id);
                     Assert.That(_collection.PoolCount, Is.EqualTo(id - 5));
                     Assert.That(view.GetBolt(id).Node.parent, Is.SameAs(_collection.PoolSlots[id - 6]));
+                    Assert.That(view.GetBolt(id).Node.localScale, Is.EqualTo(Vector3.one * 0.18f));
                     AssertStableVisualState(attempt);
                 }
 
@@ -821,6 +928,51 @@ namespace Screw.Tests.Gameplay
             yield return Finish(task);
         }
 
+        private LevelRouteData FrameSavedRoute()
+        {
+            var source = _scope.LevelView.ReadSource();
+            var route = LevelRouteData.Read(File.ReadAllText(PreparedLevelUtility.RoutePath(source.Number)), source);
+            var camera = _scope.SceneCamera;
+            camera.fieldOfView = route.Camera.FieldOfViewDegrees;
+            camera.aspect = route.Camera.Aspect;
+            camera.GetComponent<OrbitCamera>().FrameLevel();
+            return route;
+        }
+
+        private void TapRouteStep(RouteStepData step)
+        {
+            var camera = _scope.SceneCamera;
+            var input = camera.GetComponent<OrbitCamera>();
+            var rotation = LevelRouteData.Vector(step.LevelEulerDegrees);
+            input.Rotate(new Vector2(rotation.y - input.Yaw, rotation.x - input.Pitch));
+            Vector2 point = camera.ViewportToScreenPoint(new Vector3(step.ViewportPoint[0], step.ViewportPoint[1], 0f));
+            var selection = _scope.Container.Resolve<BoltSelection>();
+            var selected = new List<int>();
+            void OnSelected(LevelBoltBinding bolt) { selected.Add(bolt.Id); }
+            selection.Selected += OnSelected;
+            try
+            {
+                input.BeginPointer(-1, point);
+                input.UpdatePointer(-1, point, true);
+            }
+            finally
+            {
+                selection.Selected -= OnSelected;
+            }
+
+            CollectionAssert.AreEqual(new[] { step.BoltId }, selected,
+                "Level " + _scope.LevelView.LevelNumber + ", recorded pointer for bolt " + step.BoltId);
+        }
+
+        private IEnumerator PlayRouteStep(LevelAttempt attempt, RouteStepData step)
+        {
+            TapRouteStep(step);
+            Assert.That(attempt.ActiveTurns.TryGetValue(step.BoltId, out var turn), Is.True,
+                "Recorded pointer did not start a turn for bolt " + step.BoltId + " on level " + attempt.LevelNumber);
+            yield return FinishReleasedTurn(attempt, turn);
+            Assert.That(attempt.DetachedBoltIds, Does.Contain(step.BoltId));
+        }
+
         private IEnumerator FinishReleasedTurn(LevelAttempt attempt, AttemptTurn turn)
         {
             yield return Wait(() => turn.Phase != TurnPhase.Reserved, "Bolt did not detach.");
@@ -895,6 +1047,12 @@ namespace Screw.Tests.Gameplay
                 Assert.That(view.GroupId, Is.EqualTo(model.IsActive ? (int?)model.ColorGroupId : null));
                 Assert.That(view.Count, Is.EqualTo(model.Slots.Count(id => id.HasValue)));
                 Assert.That(view.Panel.gameObject.activeSelf, Is.EqualTo(model.IsActive));
+                if (model.IsActive)
+                {
+                    var color = _scope.LevelView.ContentCatalog.GetColor(model.PaletteIndex).Primary.color;
+                    Assert.That(view.Panel.Find("Body").GetComponent<SpriteRenderer>().color, Is.EqualTo(color));
+                    Assert.That(view.Panel.Find("Insert").GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
+                }
             }
 
             foreach (var part in _scope.LevelView.ReadSource().Parts)

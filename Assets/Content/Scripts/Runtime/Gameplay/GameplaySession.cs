@@ -10,6 +10,7 @@ namespace Screw.Gameplay
 {
     public sealed class GameplaySession : MonoBehaviour
     {
+        [SerializeField] private Text _levelLabel;
         [SerializeField] private Button _restartButton;
         [SerializeField] private GameObject _resultPanel;
         [SerializeField] private Text _resultLabel;
@@ -52,6 +53,7 @@ namespace Screw.Gameplay
                 throw new InvalidOperationException("Loaded level does not match the pending campaign transition.");
             }
 
+            _levelLabel.text = $"Уровень {Attempt.LevelNumber}";
             _started = true;
             _resultPanel.SetActive(false);
             _nextButton.gameObject.SetActive(false);
@@ -89,9 +91,13 @@ namespace Screw.Gameplay
                 return;
             }
 
-            _resultLabel.text = _campaign.IsComplete(Attempt.LevelNumber, Attempt.Status)
+            var complete = _campaign.IsComplete(Attempt.LevelNumber, Attempt.Status);
+            var won = Attempt.Status == AttemptStatus.Won;
+            _resultLabel.text = complete
                 ? "Кампания пройдена"
-                : Attempt.Status == AttemptStatus.Won ? "Победа!" : "Нет места";
+                : won ? "Победа!" : "Нет места";
+            _resultLabel.color = complete ? new Color32(255, 216, 142, 255)
+                : won ? new Color32(147, 242, 213, 255) : new Color32(255, 168, 156, 255);
             _nextButton.gameObject.SetActive(_campaign.CanAdvance(Attempt.LevelNumber, Attempt.Status));
             _resultPanel.SetActive(true);
             _restartButton.gameObject.SetActive(false);
