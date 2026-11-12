@@ -66,6 +66,12 @@ namespace Screw.Levels
             FrameLevel();
         }
 
+        internal void SetLevelRoot(Transform levelRoot)
+        {
+            _levelRoot = levelRoot;
+            _isFramed = false;
+        }
+
         public void FrameLevel()
         {
             _camera = GetComponent<Camera>();

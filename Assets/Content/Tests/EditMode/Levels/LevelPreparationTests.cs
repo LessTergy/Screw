@@ -35,32 +35,35 @@ namespace Screw.Tests.Levels
             var before = JsonConvert.SerializeObject(source);
             var gameplay = LevelGameplayDefinitionUtility.Build(source, route);
             CollectionAssert.AreEqual(Enumerable.Range(0, triples).Select(index => index % colors), gameplay.ContainerGroups);
-            var attempt = new LevelAttempt(source, gameplay);
-            for (var index = 0; index < route.Length; index++)
-            {
-                var id = route[index];
-                var bolt = attempt.Bolts[id];
-                Assert.That(bolt.ColorGroupId, Is.EqualTo(index / 3 % colors));
-                Assert.That(bolt.PaletteIndex, Is.EqualTo(source.AllowedBoltPaletteIndices[index / 3 % colors]));
-                var remaining = attempt.RemainingBoltsByPart[bolt.OwnerId];
-                var reserved = attempt.ReserveBolt(id);
-                Assert.That(reserved.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
-                Assert.That(reserved.Turn.Destination.IsPool, Is.False);
-                Assert.That(attempt.ConfirmDetachment(reserved.Turn), Is.True);
-                Assert.That(reserved.Turn.ReleasedPartId, Is.EqualTo(remaining == 1 ? (int?)bolt.OwnerId : null));
-                Assert.That(attempt.ConfirmArrival(reserved.Turn), Is.True);
-                Assert.That(attempt.PoolCount, Is.Zero);
-                Assert.That(attempt.CompleteTurn(reserved.Turn), Is.True);
-                Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo((index + 1) / 3 * 3));
-                Assert.That(attempt.Status, Is.EqualTo(index == route.Length - 1 ? AttemptStatus.Won : AttemptStatus.Active));
-            }
-
-            Assert.That(attempt.ContainerQueue, Is.Empty);
-            Assert.That(attempt.Containers.All(container => !container.IsActive), Is.True);
-            Assert.That(attempt.RemainingBoltsByPart.Values.All(count => count == 0), Is.True);
+            AssertWinningRoute(source, new LevelAttempt(source, gameplay), route);
             Assert.That(JsonConvert.SerializeObject(source), Is.EqualTo(before));
             Assert.That(JsonConvert.SerializeObject(LevelGameplayDefinitionUtility.Build(source, route)),
                 Is.EqualTo(JsonConvert.SerializeObject(gameplay)));
+        }
+
+        [Test]
+        public void PublishedDefinitionsMatchTheirRoutesAndWinAgainAfterRestart()
+        {
+            var catalog = LevelTestFixtures.LoadCampaign();
+            foreach (var entry in catalog.Levels)
+            {
+                var routePath = PreparedLevelUtility.RoutePath(entry.Number);
+                var folder = Path.GetDirectoryName(routePath).Replace('\\', '/');
+                var definition = AssetDatabase.LoadAssetAtPath<LevelGameplayDefinition>(folder + "/Level_Gameplay.asset");
+                Assert.That(definition, Is.Not.Null, folder);
+                Assert.That(definition.ContentCatalog, Is.SameAs(catalog), folder);
+                var source = definition.ReadSource();
+                Assert.That(source.Number, Is.EqualTo(entry.Number), folder);
+                var route = LevelRouteData.Read(File.ReadAllText(routePath), source)
+                    .Steps.Select(step => step.BoltId).ToArray();
+                var expected = LevelGameplayDefinitionUtility.Build(source, route);
+                Assert.That(JToken.DeepEquals(JToken.FromObject(definition.Gameplay), JToken.FromObject(expected)), Is.True, folder);
+
+                var attempt = new LevelAttempt(source, definition.Gameplay);
+                AssertWinningRoute(source, attempt, route);
+                AssertWinningRoute(source, attempt.Restart(), route);
+                Assert.That(JToken.DeepEquals(JToken.FromObject(definition.Gameplay), JToken.FromObject(expected)), Is.True, folder);
+            }
         }
 
         [TestCase("missing")]
@@ -185,6 +188,35 @@ namespace Screw.Tests.Levels
             {
                 Assert.That(serialized.FindProperty("_route"), Is.Null, "Production content must not depend on the witness.");
             }
+        }
+
+        private static void AssertWinningRoute(LevelSourceData source, LevelAttempt attempt, int[] route)
+        {
+            var capacity = LevelDataValidator.ContainerCapacity;
+            var colors = source.AllowedBoltPaletteIndices.Length;
+            for (var index = 0; index < route.Length; index++)
+            {
+                var id = route[index];
+                var bolt = attempt.Bolts[id];
+                var group = index / capacity % colors;
+                Assert.That(bolt.ColorGroupId, Is.EqualTo(group));
+                Assert.That(bolt.PaletteIndex, Is.EqualTo(source.AllowedBoltPaletteIndices[group]));
+                var remaining = attempt.RemainingBoltsByPart[bolt.OwnerId];
+                var reserved = attempt.ReserveBolt(id);
+                Assert.That(reserved.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
+                Assert.That(reserved.Turn.Destination.IsPool, Is.False);
+                Assert.That(attempt.ConfirmDetachment(reserved.Turn), Is.True);
+                Assert.That(reserved.Turn.ReleasedPartId, Is.EqualTo(remaining == 1 ? (int?)bolt.OwnerId : null));
+                Assert.That(attempt.ConfirmArrival(reserved.Turn), Is.True);
+                Assert.That(attempt.PoolCount, Is.Zero);
+                Assert.That(attempt.CompleteTurn(reserved.Turn), Is.True);
+                Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo((index + 1) / capacity * capacity));
+                Assert.That(attempt.Status, Is.EqualTo(index == route.Length - 1 ? AttemptStatus.Won : AttemptStatus.Active));
+            }
+
+            Assert.That(attempt.ContainerQueue, Is.Empty);
+            Assert.That(attempt.Containers.All(container => !container.IsActive), Is.True);
+            Assert.That(attempt.RemainingBoltsByPart.Values.All(count => count == 0), Is.True);
         }
 
         private static LevelRouteData ValidRoute(LevelSourceData source)

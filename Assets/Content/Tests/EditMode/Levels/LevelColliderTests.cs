@@ -1,18 +1,13 @@
-using System.Linq;
 using NUnit.Framework;
 using Screw.Levels;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Screw.Tests.Levels
 {
     public sealed class LevelColliderTests
     {
-        private const string GameplayPath = "Assets/Content/Scenes/Gameplay.unity";
-        private Scene _sourceScene;
-        private bool _openedHere;
+        private GameObject _instance;
         private LevelView _view;
         private BoxCollider _baseHead;
 
@@ -20,22 +15,14 @@ namespace Screw.Tests.Levels
         public void SetUp()
         {
             Assert.That(EditorApplication.isPlayingOrWillChangePlaymode, Is.False);
-            var previous = SceneManager.GetActiveScene();
-            _sourceScene = SceneManager.GetSceneByPath(GameplayPath);
-            _openedHere = !_sourceScene.IsValid() || !_sourceScene.isLoaded;
             try
             {
-                if (_openedHere)
-                {
-                    _sourceScene = EditorSceneManager.OpenScene(GameplayPath, OpenSceneMode.Additive);
-                }
-
-                Assert.That(_sourceScene.isDirty, Is.False, "Save Gameplay before testing its colliders.");
-                _view = _sourceScene.GetRootGameObjects()
-                    .SelectMany(root => root.GetComponentsInChildren<GameplayLifetimeScope>()).Single().LevelView;
-                Assert.That(_view, Is.Not.Null);
+                var catalog = LevelTestFixtures.LoadCampaign();
+                var viewPrefab = catalog.GetLevel(1).View;
+                Assert.That(viewPrefab, Is.Not.Null);
+                _instance = PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(viewPrefab));
+                _view = _instance.GetComponent<LevelView>();
                 _view.ValidateBindings();
-                var catalog = _view.ContentCatalog;
                 var source = LevelDataReader.ReadCatalog(catalog.SourceCatalog.text);
                 var prefab = catalog.GetColor(source.BoltDefaultPaletteIndex).Prefab;
                 Assert.That(prefab, Is.Not.Null);
@@ -48,22 +35,14 @@ namespace Screw.Tests.Levels
                 TearDown();
                 throw;
             }
-            finally
-            {
-                if (previous.IsValid() && previous.isLoaded)
-                {
-                    SceneManager.SetActiveScene(previous);
-                }
-            }
         }
 
         [OneTimeTearDown]
         public void TearDown()
         {
-            if (_openedHere && _sourceScene.IsValid() && _sourceScene.isLoaded)
+            if (_instance != null)
             {
-                Assert.That(_sourceScene.isDirty, Is.False, "Gameplay became dirty during the tests and was left open to preserve changes.");
-                EditorSceneManager.CloseScene(_sourceScene, true);
+                PrefabUtility.UnloadPrefabContents(_instance);
             }
         }
 
@@ -81,7 +60,7 @@ namespace Screw.Tests.Levels
         }
 
         [Test]
-        public void SavedGameplayBoltsInheritTheSharedRootColliderWithoutOverrides()
+        public void FirstLevelBoltsInheritTheSharedRootColliderWithoutOverrides()
         {
             Assert.That(_view.Bolts, Has.Count.EqualTo(9));
             foreach (var bolt in _view.Bolts)
@@ -107,7 +86,7 @@ namespace Screw.Tests.Levels
         }
 
         [Test]
-        public void SavedGameplayUsesOnlyPrimitiveCollidersWithoutRigidbody()
+        public void FirstLevelPrefabUsesOnlyPrimitiveCollidersWithoutRigidbody()
         {
             var modelPrefabPath = _view.ReadSource().SourcePrefab;
             foreach (var part in _view.Parts)

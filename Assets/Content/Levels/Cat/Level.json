@@ -22,7 +22,9 @@
   "rootScale": 1.0,
   "allowedBoltPaletteIndices": [
     1,
-    2
+    2,
+    0,
+    3
   ],
   "parts": [
     {

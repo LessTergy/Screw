@@ -18,6 +18,7 @@ namespace Screw.Editor.Levels
         {
             var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(CatalogAssetPath);
             ValidateReferences(catalog);
+            catalog.ValidateCampaign();
             Debug.Log("Validated " + catalog.Levels.Count + " campaign levels and " + catalog.Palette.Count
                 + " bolt palette entries.", catalog);
         }

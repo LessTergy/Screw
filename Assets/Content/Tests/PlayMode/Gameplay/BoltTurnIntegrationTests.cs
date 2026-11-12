@@ -19,6 +19,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using VContainer;
+using VContainer.Unity;
 using Object = UnityEngine.Object;
 
 namespace Screw.Tests.Gameplay
@@ -75,6 +76,95 @@ namespace Screw.Tests.Gameplay
             AssertMaterialsAndIdentity(attempt);
             AssertStableVisualState(attempt);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CampaignLoadsEveryLevelOnceAndRetriesTheFinalLevel()
+        {
+            var catalog = _scope.LevelView.ContentCatalog;
+            var campaign = new CampaignProgress(catalog.Levels.Count);
+            var loads = 0;
+            void CountGameplayLoads(Scene scene, LoadSceneMode mode)
+            {
+                if (scene.path == GameplayPath)
+                {
+                    loads++;
+                }
+            }
+
+            using (LifetimeScope.Enqueue(builder => builder.RegisterInstance(campaign)))
+            {
+                yield return LoadGameplay();
+                SceneManager.sceneLoaded += CountGameplayLoads;
+                try
+                {
+                    foreach (var entry in catalog.Levels.OrderBy(level => level.Number))
+                    {
+                        var session = _scope.GameplaySession;
+                        session.enabled = true;
+                        Assert.That(campaign.CurrentLevelNumber, Is.EqualTo(entry.Number));
+                        Assert.That(session.Attempt.LevelNumber, Is.EqualTo(entry.Number));
+                        Assert.That(_scope.GameplayDefinition, Is.SameAs(entry.Gameplay));
+                        Assert.That(_scope.LevelAnchor.GetComponentsInChildren<LevelView>(true).Length, Is.EqualTo(1));
+                        Assert.That(_scope.SceneCamera.GetComponent<OrbitCamera>().LevelRoot, Is.SameAs(_scope.LevelView.transform));
+                        Assert.That(Vector3.Dot(_scope.LevelView.ModelRoot.forward, -_scope.SceneCamera.transform.forward),
+                            Is.GreaterThan(0.9f), "Level " + entry.Number + " must start facing the camera.");
+                        Assert.That(_collection.PoolCount, Is.Zero);
+                        AssertMaterialsAndIdentity(session.Attempt);
+                        AssertStableVisualState(session.Attempt);
+                        Assert.That(session.Attempt.DetachedBoltIds, Is.Empty);
+
+                        var route = LevelRouteData.Read(File.ReadAllText(PreparedLevelUtility.RoutePath(entry.Number)),
+                            _scope.LevelView.ReadSource());
+                        foreach (var step in route.Steps)
+                        {
+                            var reservation = session.Attempt.ReserveBolt(step.BoltId);
+                            Assert.That(reservation.Outcome, Is.EqualTo(BoltReservationOutcome.Reserved));
+                            Assert.That(session.Attempt.ConfirmDetachment(reservation.Turn), Is.True);
+                            Assert.That(session.Attempt.ConfirmArrival(reservation.Turn), Is.True);
+                            Assert.That(session.Attempt.CompleteTurn(reservation.Turn), Is.True);
+                        }
+
+                        Assert.That(session.Attempt.Status, Is.EqualTo(AttemptStatus.Won));
+                        yield return Finish(session.PlayAsync(route.Steps[0].BoltId).AsTask());
+                        var isFinal = entry.Number == catalog.Levels.Count;
+                        var next = SessionReference<Button>("_nextButton");
+                        var retry = SessionReference<Button>("_retryButton");
+                        AssertResult(isFinal ? "Кампания пройдена" : "Победа!");
+                        Assert.That(next.gameObject.activeSelf, Is.EqualTo(!isFinal));
+                        var oldScope = _scope;
+                        var oldView = oldScope.LevelView;
+                        var previousLoads = loads;
+                        if (isFinal)
+                        {
+                            next.onClick.Invoke();
+                            Assert.That(campaign.PendingLevelNumber, Is.Null);
+                            Click(retry);
+                        }
+                        else
+                        {
+                            Click(next);
+                        }
+
+                        next.onClick.Invoke();
+                        retry.onClick.Invoke();
+                        yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
+                            "Campaign did not reload Gameplay.");
+                        yield return null;
+                        BindScope();
+                        Assert.That(loads, Is.EqualTo(previousLoads + 1));
+                        Assert.That(oldView == null, Is.True);
+                        Assert.That(campaign.PendingLevelNumber, Is.Null);
+                        Assert.That(campaign.CurrentLevelNumber, Is.EqualTo(isFinal ? entry.Number : entry.Number + 1));
+                        Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
+                        Assert.That(_scope.GameplaySession.Attempt.Status, Is.EqualTo(AttemptStatus.Active));
+                    }
+                }
+                finally
+                {
+                    SceneManager.sceneLoaded -= CountGameplayLoads;
+                }
+            }
         }
 
         [UnityTest]
@@ -543,7 +633,8 @@ namespace Screw.Tests.Gameplay
             using (var coordinator = new TurnCoordinator(attempt, _operations))
             {
                 var session = _scope.GameplaySession;
-                session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>());
+                session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>(),
+                    _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>());
                 session.enabled = true;
                 for (var id = 3; id <= 7; id++)
                 {
@@ -593,7 +684,8 @@ namespace Screw.Tests.Gameplay
                 using (var coordinator = new TurnCoordinator(attempt, _operations))
                 {
                     var session = _scope.GameplaySession;
-                    session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>());
+                    session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>(),
+                        _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>());
                     session.enabled = true;
                     foreach (var id in new[] { 9, 6, 10, 7, 8, 0, 1 })
                     {
@@ -789,7 +881,8 @@ namespace Screw.Tests.Gameplay
 
             var mesh = _scope.LevelView.GetBolt(0).Node.GetComponentInChildren<MeshFilter>(true).sharedMesh;
             Assert.That(Object.FindObjectsByType<MeshFilter>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                .Count(filter => filter.sharedMesh == mesh), Is.EqualTo(9), "Flights must move the original objects.");
+                .Count(filter => filter.sharedMesh == mesh), Is.EqualTo(attempt.Bolts.Count),
+                "Flights must move the original objects.");
         }
 
         private void AssertStableVisualState(LevelAttempt attempt)

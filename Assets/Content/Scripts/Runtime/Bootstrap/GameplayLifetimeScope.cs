@@ -14,8 +14,6 @@ namespace Screw
         [SerializeField] private Camera _sceneCamera;
         [SerializeField] private Light _sceneLight;
         [SerializeField] private Transform _ground;
-        [SerializeField] private LevelView _levelView;
-        [SerializeField] private LevelGameplayDefinition _gameplayDefinition;
         [SerializeField] private BoltTurnOperations _turnOperations;
         [SerializeField] private GameplaySession _gameplaySession;
         [SerializeField, Min(0.01f)] private float _partRemovalMargin = 1f;
@@ -40,36 +38,46 @@ namespace Screw
             get { return _ground; }
         }
 
-        public LevelView LevelView
-        {
-            get { return _levelView; }
-        }
+        public LevelView LevelView { get; private set; }
 
         public GameplaySession GameplaySession
         {
             get { return _gameplaySession; }
         }
 
-        public LevelGameplayDefinition GameplayDefinition
-        {
-            get { return _gameplayDefinition; }
-        }
+        public LevelGameplayDefinition GameplayDefinition { get; private set; }
 
         protected override void Configure(IContainerBuilder builder)
         {
-            builder.RegisterComponent(_levelView);
-            builder.RegisterComponent(_sceneCamera);
-            builder.RegisterEntryPoint<BoltSelection>(Lifetime.Scoped).AsSelf();
-            builder.RegisterInstance(_gameplayDefinition);
-            builder.Register(_ =>
+            if (_levelAnchor.GetComponentInChildren<LevelView>(true) != null)
             {
-                if (_gameplayDefinition.ContentCatalog != _levelView.ContentCatalog
-                    || _gameplayDefinition.Gameplay.LevelNumber != _levelView.LevelNumber)
-                {
-                    throw new InvalidDataException("Gameplay definition does not match the scene level and catalog.");
-                }
+                throw new InvalidDataException("Remove the scene level view before loading a campaign level.");
+            }
 
-                return new LevelAttempt(_gameplayDefinition.ReadSource(), _gameplayDefinition.Gameplay);
+            var orbit = _sceneCamera.GetComponent<OrbitCamera>();
+            builder.RegisterComponent(_sceneCamera);
+            builder.RegisterComponent(orbit);
+            builder.Register(resolver =>
+            {
+                var campaign = resolver.Resolve<CampaignProgress>();
+                return resolver.Resolve<LevelContentCatalog>().GetLevel(campaign.PendingLevelNumber ?? campaign.CurrentLevelNumber);
+            }, Lifetime.Scoped);
+            builder.Register(resolver =>
+            {
+                LevelView = resolver.Instantiate(resolver.Resolve<LevelAssetReference>().View, _levelAnchor);
+                orbit.SetLevelRoot(LevelView.transform);
+                return LevelView;
+            }, Lifetime.Scoped);
+            builder.Register(resolver =>
+            {
+                GameplayDefinition = resolver.Resolve<LevelAssetReference>().Gameplay;
+                return GameplayDefinition;
+            }, Lifetime.Scoped);
+            builder.RegisterEntryPoint<BoltSelection>(Lifetime.Scoped).AsSelf();
+            builder.Register(resolver =>
+            {
+                var definition = resolver.Resolve<LevelGameplayDefinition>();
+                return new LevelAttempt(definition.ReadSource(), definition.Gameplay);
             }, Lifetime.Scoped);
             builder.Register<LevelPartPhysics>(Lifetime.Scoped)
                 .WithParameter("ground", _ground)

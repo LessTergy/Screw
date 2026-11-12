@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using Screw.Bootstrap;
@@ -29,6 +30,7 @@ namespace Screw.Tests.Bootstrap
             var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>("Assets/Content/Settings/LevelContentCatalog.asset");
             Assert.That(catalog, Is.Not.Null);
             Assert.That(app.ContentCatalog, Is.SameAs(catalog));
+            Assert.DoesNotThrow(catalog.ValidateCampaign);
 
             var navigator = new SerializedObject(app).FindProperty("_sceneNavigatorPrefab").objectReferenceValue as SceneNavigator;
             Assert.That(navigator, Is.Not.Null);
@@ -40,6 +42,30 @@ namespace Screw.Tests.Bootstrap
             var serialized = new SerializedObject(navigator);
             AssertSceneReference(serialized.FindProperty("_bootstrapScene"), BootstrapPath);
             AssertSceneReference(serialized.FindProperty("_gameplayScene"), GameplayPath);
+        }
+
+        [TestCase("_view")]
+        [TestCase("_gameplay")]
+        public void CampaignRejectsMissingLevelAssets(string field)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>("Assets/Content/Settings/LevelContentCatalog.asset");
+            var catalog = Object.Instantiate(source);
+            try
+            {
+                using (var serialized = new SerializedObject(catalog))
+                {
+                    serialized.FindProperty("_levels").GetArrayElementAtIndex(0)
+                        .FindPropertyRelative(field).objectReferenceValue = null;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
+
+                var error = Assert.Throws<InvalidDataException>(catalog.ValidateCampaign);
+                Assert.That(error.Message, Does.Contain("missing for level 1"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(catalog);
+            }
         }
 
         [Test]
@@ -86,22 +112,13 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(gameplay.Ground.gameObject.scene, Is.EqualTo(scene));
                     Assert.That(gameplay.Ground, Is.Not.SameAs(gameplay.LevelAnchor));
                     Assert.That(gameplay.Ground.IsChildOf(gameplay.LevelAnchor), Is.False);
-                    var view = gameplay.LevelView;
-                    Assert.That(view, Is.Not.Null);
-                    Assert.That(view.transform.parent, Is.SameAs(gameplay.LevelAnchor));
-                    var settings = AssetDatabase.LoadAssetAtPath<VContainerSettings>("Assets/Content/Settings/VContainerSettings.asset");
-                    Assert.That(view.ContentCatalog, Is.SameAs(((AppLifetimeScope)settings.RootLifetimeScope).ContentCatalog));
-                    Assert.That(view.ValidateBindings().Number, Is.EqualTo(1));
-                    Assert.That(view.Parts.Count, Is.EqualTo(4));
-                    Assert.That(view.Bolts.Count, Is.EqualTo(9));
-                    Assert.That(PrefabUtility.GetCorrespondingObjectFromSource(view.LevelRoot.gameObject),
-                        Is.EqualTo(view.ContentCatalog.GetLevel(1).Prefab));
+                    Assert.That(gameplay.LevelAnchor.GetComponentInChildren<LevelView>(true), Is.Null);
                     var orbit = gameplay.SceneCamera.GetComponent<OrbitCamera>();
                     Assert.That(orbit, Is.Not.Null);
-                    Assert.That(orbit.LevelRoot, Is.SameAs(view.transform));
+                    Assert.That(orbit.LevelRoot, Is.Null);
                     Assert.That(roots.SelectMany(root => root.GetComponentsInChildren<Camera>(true)).Count(), Is.EqualTo(1));
                     var session = new SerializedObject(gameplay.GameplaySession);
-                    foreach (var field in new[] { "_restartButton", "_retryButton", "_resultPanel", "_resultLabel" })
+                    foreach (var field in new[] { "_restartButton", "_retryButton", "_nextButton", "_resultPanel", "_resultLabel" })
                     {
                         Assert.That(session.FindProperty(field).objectReferenceValue, Is.Not.Null, field);
                     }

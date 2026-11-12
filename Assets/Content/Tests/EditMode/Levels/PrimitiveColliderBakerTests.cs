@@ -143,8 +143,9 @@ namespace Screw.Tests.Levels
         public void AchievableCoverageKeepsTheRequestedTarget()
         {
             var mesh = Boxes((Vector3.zero, Vector3.one, false));
-            var result = PrimitiveColliderBaker.Analyze(mesh, reduceCoverageToFit: true);
-            Assert.That(result.TargetCoverage, Is.EqualTo(0.9f));
+            const float requestedCoverage = 0.9f;
+            var result = PrimitiveColliderBaker.Analyze(mesh, minimumCoverage: requestedCoverage, reduceCoverageToFit: true);
+            Assert.That(result.TargetCoverage, Is.EqualTo(requestedCoverage));
             Assert.That(result.Boxes, Has.Count.EqualTo(1));
         }
 

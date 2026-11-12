@@ -30,19 +30,16 @@ namespace Screw.Bootstrap
             }
         }
 
-        public void RestartGameplay()
+        public bool RestartGameplay()
         {
-            if (SceneManager.GetActiveScene().path == _gameplayScene.Path)
-            {
-                LoadGameplay();
-            }
+            return SceneManager.GetActiveScene().path == _gameplayScene.Path && LoadGameplay();
         }
 
-        private void LoadGameplay()
+        private bool LoadGameplay()
         {
             if (_loadRequested)
             {
-                return;
+                return false;
             }
 
             _loadRequested = true;
@@ -52,6 +49,8 @@ namespace Screw.Bootstrap
                 {
                     throw new InvalidOperationException("Unity did not start loading Gameplay.");
                 }
+
+                return true;
             }
             catch
             {

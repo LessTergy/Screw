@@ -145,21 +145,21 @@ namespace Screw.Tests.Bootstrap
         {
             var position = camera.transform.position;
             var rotation = camera.transform.rotation;
-            var frontIds = new[] { 0, 1, 3, 5, 7 };
             try
             {
+                Physics.SyncTransforms();
                 foreach (var bolt in view.Bolts)
                 {
                     var target = bolt.Node.GetComponent<Collider>().bounds.center;
-                    var cameraZ = frontIds.Contains(bolt.Id) ? -24f : 24f;
-                    camera.transform.position = view.LevelRoot.TransformPoint(new Vector3(0f, 2f, cameraZ));
-                    camera.transform.LookAt(target, view.LevelRoot.up);
+                    var outward = bolt.Node.forward;
+                    camera.transform.SetPositionAndRotation(target + outward * 24f,
+                        Quaternion.LookRotation(-outward, bolt.Node.up));
                     Assert.That(selection.TrySelect(camera.WorldToScreenPoint(target), out var selected),
                         Is.True, "Visible head " + bolt.Id);
                     Assert.That(selected.Id, Is.EqualTo(bolt.Id));
 
-                    camera.transform.position = view.LevelRoot.TransformPoint(new Vector3(0f, 2f, -cameraZ));
-                    camera.transform.LookAt(target, view.LevelRoot.up);
+                    camera.transform.SetPositionAndRotation(target - outward * 24f,
+                        Quaternion.LookRotation(outward, bolt.Node.up));
                     if (selection.TrySelect(camera.WorldToScreenPoint(target), out var opposite))
                     {
                         Assert.That(opposite.Id, Is.Not.EqualTo(bolt.Id), "Hidden head " + bolt.Id);
