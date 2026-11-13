@@ -1566,6 +1566,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1049403502}
+    - targetCorrespondingSourceObject: {fileID: 1110851541632028888, guid: 17db9da16fb498841932e82f0fdeb599,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1049403504}
   m_SourcePrefab: {fileID: 100100000, guid: 17db9da16fb498841932e82f0fdeb599, type: 3}
 --- !u!20 &1049403497 stripped
 Camera:
@@ -1610,6 +1614,15 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1049403498}
   m_Enabled: 1
+--- !u!45 &1049403504
+Skybox:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1049403498}
+  m_Enabled: 1
+  m_CustomSkybox: {fileID: 2100000, guid: a9b42df1a858d6f46ba6383b6077bff8, type: 2}
 --- !u!1001 &1093356093
 PrefabInstance:
   m_ObjectHideFlags: 0

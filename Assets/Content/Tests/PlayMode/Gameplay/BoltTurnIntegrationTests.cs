@@ -278,6 +278,8 @@ namespace Screw.Tests.Gameplay
         {
             var coordinator = _scope.GameplaySession.Coordinator;
             var bolt = _scope.LevelView.GetBolt(0).Node;
+            var renderer = bolt.GetComponentInChildren<MeshRenderer>();
+            var originalMaterials = renderer.sharedMaterials;
             var id = bolt.GetInstanceID();
             var boltParent = bolt.parent;
             var localDestination = bolt.localPosition + bolt.localRotation * (Vector3.forward * (1.25f * bolt.localScale.z));
@@ -290,6 +292,13 @@ namespace Screw.Tests.Gameplay
             var task = coordinator.PlayAsync(0).AsTask();
             var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
+            var foregroundMaterials = renderer.sharedMaterials;
+            for (var slotIndex = 0; slotIndex < foregroundMaterials.Length; slotIndex++)
+            {
+                Assert.That(foregroundMaterials[slotIndex].renderQueue, Is.EqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
+                Assert.That(foregroundMaterials[slotIndex].color, Is.EqualTo(originalMaterials[slotIndex].color));
+            }
+
             Assert.That(coordinator.Attempt.RemainingBoltsByPart[0], Is.EqualTo(initialAttachments));
             Assert.That(_collection.Containers[0].Count, Is.Zero);
             input.Rotate(new Vector2(65f, 45f));
@@ -308,6 +317,27 @@ namespace Screw.Tests.Gameplay
             Assert.That(Quaternion.Angle(cameraRotation, _scope.SceneCamera.transform.rotation), Is.LessThan(0.01f));
             var repeated = coordinator.PlayAsync(0).GetAwaiter().GetResult();
             Assert.That(repeated.Outcome, Is.EqualTo(BoltReservationOutcome.AlreadyReserved));
+
+            var camera = _scope.SceneCamera;
+            var head = bolt.GetComponent<BoxCollider>();
+            var slot = _collection.GetSlot(turn.Destination);
+            float HeadDepth()
+            {
+                return camera.WorldToViewportPoint(bolt.TransformPoint(head.center)).z;
+            }
+
+            var startDepth = HeadDepth();
+            var startSize = bolt.lossyScale.x / startDepth;
+            var slotDepth = camera.WorldToViewportPoint(slot.position).z;
+            var flightDepth = Mathf.Lerp(startDepth, slotDepth, 0.2f);
+            Time.timeScale = 0.1f;
+            yield return Wait(() => HeadDepth() < flightDepth, "Bolt did not approach the slot.");
+            CollectionAssert.AreEqual(foregroundMaterials, renderer.sharedMaterials);
+            Assert.That(HeadDepth(), Is.GreaterThan((startDepth + slotDepth) * 0.5f), "Sample must be taken during flight.");
+            Assert.That(bolt.lossyScale.x / HeadDepth(), Is.EqualTo(startSize).Within(startSize * 0.01f),
+                "Perspective must not change the bolt's apparent scale during flight.");
+            Assert.That(_collection.Containers[0].Count, Is.Zero);
+
             Time.timeScale = 1f;
             yield return Finish(task);
             Assert.That(bolt.GetInstanceID(), Is.EqualTo(id));

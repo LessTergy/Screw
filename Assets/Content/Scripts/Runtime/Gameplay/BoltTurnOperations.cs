@@ -24,13 +24,16 @@ namespace Screw.Gameplay
         [SerializeField] private AudioClip _closeClip;
         [SerializeField, Min(0.01f)] private float _detachDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _flightDuration = 0.25f;
+        [SerializeField, Min(0.01f)] private float _seatDuration = 0.2f;
         [SerializeField, Min(0.01f)] private float _replacementDuration = 0.2f;
         [SerializeField, Min(0.01f)] private float _withdrawDistance = 1.25f;
 
         private readonly Dictionary<int, Transform> _bolts = new Dictionary<int, Transform>();
+        private readonly Dictionary<Material, Material> _foregroundMaterials = new Dictionary<Material, Material>();
         private LevelAttempt _attempt;
         private LevelContentCatalog _catalog;
         private LevelPartPhysics _partPhysics;
+        private Shader _foregroundShader;
 
         public CollectionView Collection
         {
@@ -40,6 +43,12 @@ namespace Screw.Gameplay
         [Inject]
         public void Construct(LevelView view, LevelAttempt attempt, LevelContentCatalog catalog, LevelPartPhysics partPhysics)
         {
+            _foregroundShader = Resources.Load<Shader>("ForegroundBolt");
+            if (_foregroundShader == null)
+            {
+                throw new InvalidOperationException("Missing foreground bolt shader.");
+            }
+
             _attempt = attempt;
             _catalog = catalog;
             _partPhysics = partPhysics;
@@ -66,7 +75,7 @@ namespace Screw.Gameplay
             sequence.Append(bolt.DOLocalMove(destination, _detachDuration).SetEase(Ease.InOutSine));
             sequence.Join(bolt.DOLocalRotate(new Vector3(0f, 0f, 720f), _detachDuration, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.InOutSine));
-            await Animate(sequence, cancellationToken);
+            await AnimateBolt(bolt, sequence, cancellationToken);
         }
 
         public UniTask ReleasePartAsync(AttemptTurn turn, CancellationToken cancellationToken)
@@ -109,25 +118,55 @@ namespace Screw.Gameplay
         {
             cancellationToken.ThrowIfCancellationRequested();
             var slot = _collection.GetSlot(destination);
-            var scale = destination.IsPool ? PoolBoltScale : ContainerBoltScale;
-            var cameraRoot = _collection.Camera.transform;
-            bolt.SetParent(cameraRoot, true);
-            var start = bolt.localPosition;
-            var rotation = Quaternion.Euler(0f, 180f, 0f);
-            var position = -(rotation * (bolt.GetComponent<BoxCollider>().center * scale));
+            var seatedScale = Vector3.one * (destination.IsPool ? PoolBoltScale : ContainerBoltScale);
+            var seatedRotation = Quaternion.Euler(0f, 180f, 0f);
+            var headCenter = bolt.GetComponent<BoxCollider>().center;
+            var camera = _collection.Camera;
+            bolt.SetParent(camera.transform, true);
+            var start = camera.WorldToViewportPoint(bolt.TransformPoint(headCenter));
+            var startRotation = bolt.rotation;
+            // In perspective, the apparent size is proportional to scale divided by depth.
+            var scalePerDepth = bolt.localScale / start.z;
+
+            Vector3 AboveSlot()
+            {
+                var slotDepth = camera.WorldToViewportPoint(slot.position).z;
+                var flightScale = scalePerDepth.z * slotDepth;
+                var slotScale = seatedScale.z * slot.lossyScale.z;
+                return slot.position - slot.forward * (_withdrawDistance * Mathf.Max(flightScale, slotScale));
+            }
+
+            void PlaceHead(Vector3 position, Quaternion rotation, Vector3 scale)
+            {
+                bolt.localScale = scale;
+                bolt.rotation = rotation;
+                bolt.position = position - bolt.TransformVector(headCenter);
+            }
+
             var sequence = DOTween.Sequence();
             sequence.Append(DOTween.To(() => 0f, progress =>
             {
-                var target = cameraRoot.InverseTransformPoint(slot.TransformPoint(position));
-                bolt.localPosition = Vector3.LerpUnclamped(start, target, progress);
-            }, 1f, _flightDuration).SetEase(Ease.InOutQuad));
-            sequence.Join(bolt.DOLocalRotate(new Vector3(0f, 180f, 0f), _flightDuration).SetEase(Ease.InOutQuad));
-            sequence.Join(bolt.DOScale(Vector3.one * (slot.lossyScale.x * scale), _flightDuration));
-            await Animate(sequence, cancellationToken);
+                var target = camera.WorldToViewportPoint(AboveSlot());
+                var point = Vector3.LerpUnclamped(start, target, progress);
+                var arcHeight = Mathf.Min(0.055f, Mathf.Abs(target.x - start.x) * 0.25f + Mathf.Abs(target.y - start.y) * 0.12f);
+                point.y += arcHeight * 4f * progress * (1f - progress);
+                var rotation = Quaternion.Slerp(startRotation, slot.rotation * seatedRotation, progress);
+                PlaceHead(camera.ViewportToWorldPoint(point), rotation, scalePerDepth * point.z);
+            }, 1f, _flightDuration).SetEase(Ease.InOutSine));
+            sequence.Append(DOTween.To(() => 0f, progress =>
+            {
+                var position = Vector3.LerpUnclamped(AboveSlot(), slot.position, progress);
+                var depth = camera.WorldToViewportPoint(position).z;
+                var targetScale = Vector3.Scale(seatedScale, slot.lossyScale);
+                var scale = Vector3.LerpUnclamped(scalePerDepth * depth, targetScale, progress);
+                var twist = Quaternion.AngleAxis(-360f * progress, Vector3.forward);
+                PlaceHead(position, slot.rotation * seatedRotation * twist, scale);
+            }, 1f, _seatDuration).SetEase(Ease.InOutSine));
+            await AnimateBolt(bolt, sequence, cancellationToken);
             bolt.SetParent(slot, false);
-            bolt.localPosition = position;
-            bolt.localRotation = rotation;
-            bolt.localScale = Vector3.one * scale;
+            bolt.localPosition = -(seatedRotation * Vector3.Scale(headCenter, seatedScale));
+            bolt.localRotation = seatedRotation;
+            bolt.localScale = seatedScale;
             _audio.PlayOneShot(_seatClip);
         }
 
@@ -140,7 +179,15 @@ namespace Screw.Gameplay
             lid.gameObject.SetActive(true);
             var outgoing = DOTween.Sequence();
             outgoing.Append(lid.DOLocalMoveY(closedPosition.y, LidSlideDuration).SetEase(Ease.OutCubic));
-            outgoing.AppendCallback(() => _audio.PlayOneShot(_closeClip));
+            outgoing.AppendCallback(() =>
+            {
+                foreach (var id in change.CollectedBoltIds)
+                {
+                    _bolts[id].gameObject.SetActive(false);
+                }
+
+                _audio.PlayOneShot(_closeClip);
+            });
             outgoing.AppendInterval(ClosedHoldDuration);
             outgoing.Append(container.Panel.DOLocalMoveY(1f, _replacementDuration).SetEase(Ease.InQuad));
             try
@@ -156,11 +203,6 @@ namespace Screw.Gameplay
                 }
             }
 
-            foreach (var id in change.CollectedBoltIds)
-            {
-                _bolts[id].gameObject.SetActive(false);
-            }
-
             container.Configure(change.NextColorGroupId, _catalog, _attempt.PaletteIndices);
             if (change.NextColorGroupId.HasValue)
             {
@@ -170,6 +212,46 @@ namespace Screw.Gameplay
             else
             {
                 container.Panel.localPosition = Vector3.zero;
+            }
+        }
+
+        private async UniTask AnimateBolt(Transform bolt, Sequence sequence, CancellationToken cancellationToken)
+        {
+            var renderer = bolt.GetComponentInChildren<MeshRenderer>();
+            var originals = renderer.sharedMaterials;
+            renderer.sharedMaterials = new[] { GetForegroundMaterial(originals[0]), GetForegroundMaterial(originals[1]) };
+            try
+            {
+                await Animate(sequence, cancellationToken);
+            }
+            finally
+            {
+                if (renderer != null)
+                {
+                    renderer.sharedMaterials = originals;
+                }
+            }
+        }
+
+        private Material GetForegroundMaterial(Material source)
+        {
+            if (!_foregroundMaterials.TryGetValue(source, out var material))
+            {
+                material = new Material(_foregroundShader);
+                material.color = source.color;
+                material.SetFloat("_Metallic", source.GetFloat("_Metallic"));
+                material.SetFloat("_Smoothness", source.GetFloat("_Smoothness"));
+                _foregroundMaterials.Add(source, material);
+            }
+
+            return material;
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var material in _foregroundMaterials.Values)
+            {
+                Destroy(material);
             }
         }
 
