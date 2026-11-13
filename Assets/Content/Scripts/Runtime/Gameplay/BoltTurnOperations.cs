@@ -13,8 +13,15 @@ namespace Screw.Gameplay
     {
         private const float ContainerBoltScale = 0.25f;
         private const float PoolBoltScale = 0.18f;
+        private const float LidSlideDuration = 0.16f;
+        private const float ClosedHoldDuration = 0.09f;
 
         [SerializeField] private CollectionView _collection;
+        [SerializeField] private AudioSource _audio;
+        [SerializeField] private AudioClip _unscrewClip;
+        [SerializeField] private AudioClip _seatClip;
+        [SerializeField] private AudioClip _releaseClip;
+        [SerializeField] private AudioClip _closeClip;
         [SerializeField, Min(0.01f)] private float _detachDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _flightDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _replacementDuration = 0.2f;
@@ -53,6 +60,7 @@ namespace Screw.Gameplay
             cancellationToken.ThrowIfCancellationRequested();
             var bolt = _bolts[turn.BoltId];
             bolt.GetComponent<Collider>().enabled = false;
+            _audio.PlayOneShot(_unscrewClip);
             var destination = bolt.localPosition + bolt.localRotation * (Vector3.forward * (_withdrawDistance * bolt.localScale.z));
             var sequence = DOTween.Sequence();
             sequence.Append(bolt.DOLocalMove(destination, _detachDuration).SetEase(Ease.InOutSine));
@@ -63,7 +71,10 @@ namespace Screw.Gameplay
 
         public UniTask ReleasePartAsync(AttemptTurn turn, CancellationToken cancellationToken)
         {
-            return _partPhysics.ReleaseAsync(turn.ReleasedPartId.Value, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var release = _partPhysics.ReleaseAsync(turn.ReleasedPartId.Value, cancellationToken);
+            _audio.PlayOneShot(_releaseClip);
+            return release;
         }
 
         public async UniTask ArriveAsync(AttemptTurn turn, CancellationToken cancellationToken)
@@ -117,13 +128,34 @@ namespace Screw.Gameplay
             bolt.localPosition = position;
             bolt.localRotation = rotation;
             bolt.localScale = Vector3.one * scale;
+            _audio.PlayOneShot(_seatClip);
         }
 
         private async UniTask Replace(ContainerChange change, CancellationToken cancellationToken)
         {
             var container = _collection.Containers[change.ContainerIndex];
-            var outgoing = DOTween.Sequence().Append(container.Panel.DOLocalMoveY(1f, _replacementDuration));
-            await Animate(outgoing, cancellationToken);
+            var lid = container.Lid.transform;
+            var closedPosition = lid.localPosition;
+            lid.localPosition = closedPosition + Vector3.up * 0.16f;
+            lid.gameObject.SetActive(true);
+            var outgoing = DOTween.Sequence();
+            outgoing.Append(lid.DOLocalMoveY(closedPosition.y, LidSlideDuration).SetEase(Ease.OutCubic));
+            outgoing.AppendCallback(() => _audio.PlayOneShot(_closeClip));
+            outgoing.AppendInterval(ClosedHoldDuration);
+            outgoing.Append(container.Panel.DOLocalMoveY(1f, _replacementDuration).SetEase(Ease.InQuad));
+            try
+            {
+                await Animate(outgoing, cancellationToken);
+            }
+            finally
+            {
+                if (lid != null)
+                {
+                    lid.localPosition = closedPosition;
+                    lid.gameObject.SetActive(false);
+                }
+            }
+
             foreach (var id in change.CollectedBoltIds)
             {
                 _bolts[id].gameObject.SetActive(false);

@@ -9,10 +9,16 @@ namespace Screw.Gameplay
         [SerializeField] private Transform _panel;
         [SerializeField] private Transform[] _slots;
         [SerializeField] private SpriteRenderer _body;
+        [SerializeField] private SpriteRenderer _lid;
 
         public Transform Panel
         {
             get { return _panel; }
+        }
+
+        public SpriteRenderer Lid
+        {
+            get { return _lid; }
         }
 
         public IReadOnlyList<Transform> Slots
@@ -27,10 +33,12 @@ namespace Screw.Gameplay
         {
             GroupId = groupId;
             Count = 0;
+            _lid.gameObject.SetActive(false);
             _panel.gameObject.SetActive(groupId.HasValue);
             if (groupId.HasValue)
             {
                 _body.color = catalog.GetColor(palette[groupId.Value]).Primary.color;
+                _lid.color = _body.color;
             }
         }
 

@@ -463,14 +463,19 @@ namespace Screw.Tests.Gameplay
 
                 yield return PlayAndFinish(coordinator, 0);
                 yield return PlayAndFinish(coordinator, 1);
+                var closedY = _collection.Containers[0].Lid.transform.localPosition.y;
                 var task = coordinator.PlayAsync(2).AsTask();
                 var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 var sawOriginalFull = false;
+                var sawClosedLid = false;
                 var sawNextGroup = false;
                 var deadline = Time.realtimeSinceStartup + 10f;
                 while (!task.IsCompleted && Time.realtimeSinceStartup < deadline)
                 {
                     sawOriginalFull |= _collection.Containers[0].GroupId == 0 && _collection.Containers[0].Count == 3;
+                    var container = _collection.Containers[0];
+                    sawClosedLid |= container.GroupId == 0 && container.Lid.gameObject.activeSelf
+                        && Mathf.Approximately(container.Lid.transform.localPosition.y, closedY);
                     sawNextGroup |= _collection.Containers[0].GroupId == 2;
                     if (sawNextGroup && _collection.Containers[0].GroupId == null && _collection.PoolCount == 0)
                     {
@@ -482,6 +487,7 @@ namespace Screw.Tests.Gameplay
                 yield return FinishReleasedTurn(attempt, turn);
                 yield return Finish(task);
                 Assert.That(sawOriginalFull, Is.True, "The first full container must visibly leave before replacement.");
+                Assert.That(sawClosedLid, Is.True, "The filled container must close before it leaves.");
                 Assert.That(sawNextGroup, Is.True, "The queued color must appear before pool transfers.");
                 Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo(6));
                 Assert.That(_collection.PoolCount, Is.Zero);
@@ -683,6 +689,7 @@ namespace Screw.Tests.Gameplay
                 _scope.SceneCamera.fieldOfView = 75f;
                 _scope.Ground.position += Vector3.down * 20f;
                 var oldScope = _scope;
+                var oldAudio = oldScope.GetComponent<AudioSource>();
                 var oldNodes = _scope.LevelView.Parts.Select(part => part.Node)
                     .Concat(_scope.LevelView.Bolts.Select(bolt => bolt.Node)).ToArray();
                 var restart = SessionReference<Button>("_restartButton");
@@ -694,6 +701,8 @@ namespace Screw.Tests.Gameplay
                     "Restart did not replace Gameplay in phase " + phase);
                 yield return null;
                 BindScope();
+                Assert.That(oldAudio == null, Is.True);
+                Assert.That(_scope.GetComponent<AudioSource>().isPlaying, Is.False);
                 Assert.That(task.IsCompleted, Is.True);
                 Assert.Throws<OperationCanceledException>(() => task.GetAwaiter().GetResult());
                 Assert.That(oldNodes.All(node => node == null), Is.True);
@@ -1047,6 +1056,7 @@ namespace Screw.Tests.Gameplay
                 Assert.That(view.GroupId, Is.EqualTo(model.IsActive ? (int?)model.ColorGroupId : null));
                 Assert.That(view.Count, Is.EqualTo(model.Slots.Count(id => id.HasValue)));
                 Assert.That(view.Panel.gameObject.activeSelf, Is.EqualTo(model.IsActive));
+                Assert.That(view.Lid.gameObject.activeSelf, Is.False);
                 if (model.IsActive)
                 {
                     var color = _scope.LevelView.ContentCatalog.GetColor(model.PaletteIndex).Primary.color;
