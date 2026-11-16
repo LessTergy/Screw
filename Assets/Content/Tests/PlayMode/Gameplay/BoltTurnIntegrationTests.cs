@@ -27,6 +27,9 @@ namespace Screw.Tests.Gameplay
     public sealed class BoltTurnIntegrationTests
     {
         private const string GameplayPath = "Assets/Content/Scenes/Gameplay.unity";
+        private const string BoxParticlesName = "Container Close Particles";
+        private const string BoltParticlesName = "Bolt Withdrawal Particles";
+        private const int BoltBurstSize = 12;
         private GameplayLifetimeScope _scope;
         private BoltTurnOperations _operations;
         private CollectionView _collection;
@@ -278,6 +281,10 @@ namespace Screw.Tests.Gameplay
         {
             var coordinator = _scope.GameplaySession.Coordinator;
             var bolt = _scope.LevelView.GetBolt(0).Node;
+            var particles = GetParticles(BoltParticlesName);
+            var particleSpace = _scope.LevelView.LevelRoot;
+            var impact = BoltHeadInParticleSpace(bolt, particleSpace);
+            Assert.That(particles.main.customSimulationSpace, Is.SameAs(particleSpace));
             var renderer = bolt.GetComponentInChildren<MeshRenderer>();
             var originalMaterials = renderer.sharedMaterials;
             var id = bolt.GetInstanceID();
@@ -292,6 +299,13 @@ namespace Screw.Tests.Gameplay
             var task = coordinator.PlayAsync(0).AsTask();
             var turn = coordinator.Attempt.ActiveTurns.Values.SingleOrDefault();
             Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
+            Assert.That(particles.particleCount, Is.EqualTo(BoltBurstSize), "The accepted tap must emit before detachment begins.");
+            var sparks = new ParticleSystem.Particle[BoltBurstSize];
+            Assert.That(particles.GetParticles(sparks), Is.EqualTo(sparks.Length));
+            Assert.That(sparks.All(spark => Vector3.Distance(spark.position, impact.Position) < impact.Diameter), Is.True);
+            Assert.That(sparks.All(spark => spark.velocity.magnitude > impact.Diameter), Is.True);
+            AssertRadialBurst(particles, particleSpace.InverseTransformDirection(_scope.SceneCamera.transform.right),
+                particleSpace.InverseTransformDirection(_scope.SceneCamera.transform.up));
             var foregroundMaterials = renderer.sharedMaterials;
             for (var slotIndex = 0; slotIndex < foregroundMaterials.Length; slotIndex++)
             {
@@ -315,8 +329,10 @@ namespace Screw.Tests.Gameplay
             Assert.That(bolt.position, Is.EqualTo(flightPosition), "In-flight bolt must no longer inherit assembly rotation.");
             Assert.That(_scope.SceneCamera.transform.position, Is.EqualTo(cameraPosition));
             Assert.That(Quaternion.Angle(cameraRotation, _scope.SceneCamera.transform.rotation), Is.LessThan(0.01f));
+            var particlesBeforeRepeat = particles.particleCount;
             var repeated = coordinator.PlayAsync(0).GetAwaiter().GetResult();
             Assert.That(repeated.Outcome, Is.EqualTo(BoltReservationOutcome.AlreadyReserved));
+            Assert.That(particles.particleCount, Is.EqualTo(particlesBeforeRepeat));
 
             var camera = _scope.SceneCamera;
             var head = bolt.GetComponent<BoxCollider>();
@@ -472,6 +488,40 @@ namespace Screw.Tests.Gameplay
         }
 
         [UnityTest]
+        public IEnumerator RapidTapsEmitAtBothBoltHeadsAndRestartClearsTheBursts()
+        {
+            var coordinator = _scope.GameplaySession.Coordinator;
+            var particles = GetParticles(BoltParticlesName);
+            var particleSpace = _scope.LevelView.LevelRoot;
+            var firstHead = BoltHeadInParticleSpace(_scope.LevelView.GetBolt(0).Node, particleSpace);
+            var secondHead = BoltHeadInParticleSpace(_scope.LevelView.GetBolt(6).Node, particleSpace);
+            var first = coordinator.PlayAsync(0).AsTask();
+            var second = coordinator.PlayAsync(6).AsTask();
+            var duplicate = coordinator.PlayAsync(0).GetAwaiter().GetResult();
+            Assert.That(duplicate.Outcome, Is.EqualTo(BoltReservationOutcome.AlreadyReserved));
+
+            var sparks = new ParticleSystem.Particle[particles.main.maxParticles];
+            var count = particles.GetParticles(sparks);
+            Assert.That(count, Is.EqualTo(2 * BoltBurstSize), "Both accepted taps must emit immediately.");
+            Assert.That(sparks.Take(count).Count(spark => Vector3.Distance(spark.position, firstHead.Position) < firstHead.Diameter),
+                Is.EqualTo(BoltBurstSize));
+            Assert.That(sparks.Take(count).Count(spark => Vector3.Distance(spark.position, secondHead.Position) < secondHead.Diameter),
+                Is.EqualTo(BoltBurstSize));
+
+            var oldScope = _scope;
+            _scope.Container.Resolve<SceneNavigator>().RestartGameplay();
+            yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
+                "Gameplay did not restart while withdrawal particles were alive.");
+            yield return null;
+            BindScope();
+            Assert.That(particles == null, Is.True);
+            Assert.That(GetParticles(BoltParticlesName).particleCount, Is.Zero);
+            Assert.That(first.IsCompleted && second.IsCompleted, Is.True);
+            Assert.Throws<OperationCanceledException>(() => first.GetAwaiter().GetResult());
+            Assert.Throws<OperationCanceledException>(() => second.GetAwaiter().GetResult());
+        }
+
+        [UnityTest]
         public IEnumerator RealPoolFlightsReplayEveryChainedReplacementInLogicalOrder()
         {
             var view = _scope.LevelView;
@@ -493,21 +543,54 @@ namespace Screw.Tests.Gameplay
 
                 yield return PlayAndFinish(coordinator, 0);
                 yield return PlayAndFinish(coordinator, 1);
-                var closedY = _collection.Containers[0].Lid.transform.localPosition.y;
+                var particles = GetParticles(BoxParticlesName);
+                var burstGroups = new HashSet<int>();
+                var container = _collection.Containers[0];
+                var panel = container.Panel;
+                var lid = container.Lid.transform;
+                var closedY = lid.localPosition.y;
+                var restScale = panel.localScale;
+                Assert.That(lid.IsChildOf(panel), Is.True);
                 var task = coordinator.PlayAsync(2).AsTask();
                 var turn = attempt.ActiveTurns.Values.SingleOrDefault();
                 var sawOriginalFull = false;
                 var sawClosedLid = false;
+                var sawImpactSquash = false;
+                var sawStretch = false;
                 var sawNextGroup = false;
                 var deadline = Time.realtimeSinceStartup + 10f;
                 while (!task.IsCompleted && Time.realtimeSinceStartup < deadline)
                 {
-                    sawOriginalFull |= _collection.Containers[0].GroupId == 0 && _collection.Containers[0].Count == 3;
-                    var container = _collection.Containers[0];
-                    sawClosedLid |= container.GroupId == 0 && container.Lid.gameObject.activeSelf
-                        && Mathf.Approximately(container.Lid.transform.localPosition.y, closedY);
-                    sawNextGroup |= _collection.Containers[0].GroupId == 2;
-                    if (sawNextGroup && _collection.Containers[0].GroupId == null && _collection.PoolCount == 0)
+                    sawOriginalFull |= container.GroupId == 0 && container.Count == 3;
+                    var lidY = lid.localPosition.y;
+                    var panelScale = panel.localScale;
+                    sawClosedLid |= container.GroupId == 0 && lid.gameObject.activeSelf
+                        && Mathf.Approximately(lidY, closedY);
+                    if (particles.particleCount > 0)
+                    {
+                        Assert.That(lid.gameObject.activeSelf, Is.True);
+                        Assert.That(lidY, Is.EqualTo(closedY).Within(0.001f), "The lid must stay seated after impact.");
+                        Assert.That(container.GroupId.HasValue, Is.True);
+                        if (burstGroups.Add(container.GroupId.Value))
+                        {
+                            AssertRadialBurst(particles, lid.right, lid.up);
+                        }
+
+                        sawImpactSquash |= Mathf.Abs(panelScale.y) < Mathf.Abs(restScale.y) * 0.9f
+                            && Mathf.Abs(panelScale.x) > Mathf.Abs(restScale.x);
+                        sawStretch |= Mathf.Abs(panelScale.y) > Mathf.Abs(restScale.y) * 1.03f
+                            && Mathf.Abs(panelScale.x) < Mathf.Abs(restScale.x);
+                    }
+
+                    if (lid.gameObject.activeSelf && panel.localPosition.y > 0.001f)
+                    {
+                        Assert.That(lidY, Is.EqualTo(closedY).Within(0.001f), "The lid must settle before the panel moves.");
+                        Assert.That(Vector3.Distance(panelScale, restScale), Is.LessThan(0.001f),
+                            "The box must regain its original shape before the panel moves.");
+                    }
+
+                    sawNextGroup |= container.GroupId == 2;
+                    if (sawNextGroup && container.GroupId == null && _collection.PoolCount == 0)
                     {
                         break;
                     }
@@ -518,6 +601,10 @@ namespace Screw.Tests.Gameplay
                 yield return Finish(task);
                 Assert.That(sawOriginalFull, Is.True, "The first full container must visibly leave before replacement.");
                 Assert.That(sawClosedLid, Is.True, "The filled container must close before it leaves.");
+                Assert.That(sawImpactSquash, Is.True, "The whole box must compress at impact.");
+                Assert.That(sawStretch, Is.True, "The box must stretch as it rebounds from compression.");
+                CollectionAssert.AreEquivalent(new[] { 0, 2 }, burstGroups, "Direct and pool fills must both emit.");
+                Assert.That(particles.particleCount, Is.Zero);
                 Assert.That(sawNextGroup, Is.True, "The queued color must appear before pool transfers.");
                 Assert.That(attempt.CollectedBoltIds.Count, Is.EqualTo(6));
                 Assert.That(_collection.PoolCount, Is.Zero);
@@ -677,7 +764,7 @@ namespace Screw.Tests.Gameplay
         [UnityTest]
         public IEnumerator RestartButtonRestoresEveryTurnPhaseAndIgnoresDoubleClicks()
         {
-            for (var phase = 0; phase < 4; phase++)
+            for (var phase = 0; phase < 5; phase++)
             {
                 var session = _scope.GameplaySession;
                 session.enabled = true;
@@ -694,15 +781,21 @@ namespace Screw.Tests.Gameplay
                     yield return Finish(session.PlayAsync(0).AsTask());
                 }
 
+                if (phase == 4)
+                {
+                    yield return Finish(session.PlayAsync(6).AsTask());
+                }
+
                 Time.timeScale = phase == 0 ? 0f : 1f;
-                var task = session.PlayAsync(phase >= 2 ? 1 : 0).AsTask();
+                var boltId = phase == 4 ? 2 : phase >= 2 ? 1 : 0;
+                var task = session.PlayAsync(boltId).AsTask();
                 var turn = session.Attempt.ActiveTurns.Values.SingleOrDefault();
                 if (phase >= 1)
                 {
                     yield return Wait(() => turn.Phase == TurnPhase.InTransit, "Flight did not begin.");
                 }
 
-                if (phase >= 2)
+                if (phase == 2 || phase == 3)
                 {
                     _scope.LevelView.GetPart(0).Node.GetComponent<Rigidbody>().isKinematic = true;
                     yield return Wait(() => turn.Phase == TurnPhase.AwaitingCompletion, "Sorting did not begin.");
@@ -712,6 +805,12 @@ namespace Screw.Tests.Gameplay
                 {
                     yield return new WaitForSeconds(1.2f);
                     Assert.That(task.IsCompleted, Is.False, "Visible part must keep removal pending.");
+                }
+
+                var oldParticles = GetParticles(BoxParticlesName);
+                if (phase == 4)
+                {
+                    yield return Wait(() => oldParticles.particleCount > 0, "The lid impact did not emit particles.");
                 }
 
                 Time.timeScale = 0f;
@@ -732,6 +831,8 @@ namespace Screw.Tests.Gameplay
                 yield return null;
                 BindScope();
                 Assert.That(oldAudio == null, Is.True);
+                Assert.That(oldParticles == null, Is.True);
+                Assert.That(GetParticles(BoxParticlesName).particleCount, Is.Zero);
                 Assert.That(_scope.GetComponent<AudioSource>().isPlaying, Is.False);
                 Assert.That(task.IsCompleted, Is.True);
                 Assert.Throws<OperationCanceledException>(() => task.GetAwaiter().GetResult());
@@ -958,6 +1059,39 @@ namespace Screw.Tests.Gameplay
             {
                 button = PointerEventData.InputButton.Left
             }, ExecuteEvents.pointerClickHandler);
+        }
+
+        private static void AssertRadialBurst(ParticleSystem particles, Vector3 right, Vector3 up)
+        {
+            var samples = new ParticleSystem.Particle[particles.main.maxParticles];
+            var count = particles.GetParticles(samples);
+            var min = Vector2.zero;
+            var max = Vector2.zero;
+            for (var index = 0; index < count; index++)
+            {
+                var velocity = samples[index].velocity;
+                var projected = new Vector2(Vector3.Dot(velocity, right), Vector3.Dot(velocity, up));
+                min = Vector2.Min(min, projected);
+                max = Vector2.Max(max, projected);
+            }
+
+            Assert.That(min.x, Is.LessThan(0f));
+            Assert.That(max.x, Is.GreaterThan(0f));
+            Assert.That(min.y, Is.LessThan(0f));
+            Assert.That(max.y, Is.GreaterThan(0f));
+        }
+
+        private ParticleSystem GetParticles(string name)
+        {
+            return _operations.transform.Find(name).GetComponent<ParticleSystem>();
+        }
+
+        private static (Vector3 Position, float Diameter) BoltHeadInParticleSpace(Transform bolt, Transform particleSpace)
+        {
+            var head = bolt.GetComponent<BoxCollider>();
+            var front = head.center + Vector3.forward * (head.size.z * 0.5f);
+            var diameter = particleSpace.InverseTransformVector(bolt.TransformVector(Vector3.right * head.size.x)).magnitude;
+            return (particleSpace.InverseTransformPoint(bolt.TransformPoint(front)), diameter);
         }
 
         private IEnumerator PlayAndFinish(TurnCoordinator coordinator, int boltId)
