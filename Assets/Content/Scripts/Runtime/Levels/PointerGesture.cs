@@ -5,12 +5,16 @@ namespace Screw.Levels
 {
     public sealed class PointerGesture
     {
+        private const float HoldDuration = 0.2f;
+
         private bool _isActive;
         private bool _isDragging;
+        private bool _isHolding;
         private int _pointerId;
         private Vector2 _origin;
         private Vector2 _previousPosition;
         private float _thresholdSquared;
+        private float _holdTime;
 
         public bool IsActive
         {
@@ -20,6 +24,11 @@ namespace Screw.Levels
         public bool IsDragging
         {
             get { return _isDragging; }
+        }
+
+        public bool IsHolding
+        {
+            get { return _isHolding; }
         }
 
         public void Begin(int pointerId, Vector2 position, float dragThreshold, bool blocked)
@@ -56,24 +65,36 @@ namespace Screw.Levels
             }
 
             var delta = Vector2.zero;
-            if (!_isDragging && (position - _origin).sqrMagnitude >= _thresholdSquared)
+            if (_isDragging || _isHolding)
+            {
+                delta = position - _previousPosition;
+            }
+            else if ((position - _origin).sqrMagnitude >= _thresholdSquared)
             {
                 _isDragging = true;
                 delta = position - _origin;
-            }
-            else if (_isDragging)
-            {
-                delta = position - _previousPosition;
             }
 
             _previousPosition = position;
             return delta;
         }
 
+        public bool TryHold(float deltaTime)
+        {
+            if (!_isActive || _isDragging || _isHolding)
+            {
+                return false;
+            }
+
+            _holdTime += deltaTime;
+            _isHolding = _holdTime >= HoldDuration;
+            return _isHolding;
+        }
+
         public bool End(int pointerId, Vector2 position, bool blocked)
         {
             Move(pointerId, position, blocked);
-            var tapped = _isActive && !_isDragging;
+            var tapped = _isActive && !_isDragging && !_isHolding;
             Cancel();
             return tapped;
         }
@@ -82,6 +103,8 @@ namespace Screw.Levels
         {
             _isActive = false;
             _isDragging = false;
+            _isHolding = false;
+            _holdTime = 0f;
         }
     }
 }

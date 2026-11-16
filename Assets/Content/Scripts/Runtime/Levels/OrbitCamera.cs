@@ -9,6 +9,13 @@ namespace Screw.Levels
     [RequireComponent(typeof(Camera))]
     public sealed class OrbitCamera : MonoBehaviour
     {
+        private const float DragSmoothingRate = 28f;
+        private const float InertiaDecayRate = 10f;
+        private const float MaxInertiaSpeed = 360f;
+        private const float MinInertiaSpeed = 1f;
+        private const float ReleasePauseSeconds = 0.07f;
+        private const float HoldDragScale = 0.2f;
+
         [SerializeField] private Transform _levelRoot;
         [SerializeField] private Vector2 _startAngles = new Vector2(0f, -15f);
         [SerializeField, Min(1f)] private float _framingPadding = 1.15f;
@@ -17,13 +24,19 @@ namespace Screw.Levels
 
         private readonly PointerGesture _gesture = new PointerGesture();
         private readonly List<RaycastResult> _uiHits = new List<RaycastResult>();
+        private readonly PartPreview _partPreview = new PartPreview();
 
         private Camera _camera;
+        private Func<Vector2, Transform> _partAtPointer;
+        private Transform _pressedPart;
         private Vector3 _pivot;
         private float _radius;
         private float _distance;
         private float _yaw;
         private float _pitch;
+        private Vector2 _pendingDrag;
+        private Vector2 _angularVelocity;
+        private float _stationaryTime;
         private float _aspect;
         private float _fieldOfView;
         private bool _isFramed;
@@ -35,6 +48,16 @@ namespace Screw.Levels
         private PointerEventData _uiPointer;
 
         public event Action<Vector2> Tapped;
+
+        internal Func<Vector2, Transform> PartAtPointer
+        {
+            get { return _partAtPointer; }
+            set
+            {
+                CancelPointer();
+                _partAtPointer = value;
+            }
+        }
 
         public Transform LevelRoot
         {
@@ -68,6 +91,7 @@ namespace Screw.Levels
 
         internal void SetLevelRoot(Transform levelRoot)
         {
+            CancelPointer();
             _levelRoot = levelRoot;
             _isFramed = false;
         }
@@ -106,6 +130,12 @@ namespace Screw.Levels
 
         public void Rotate(Vector2 deltaDegrees)
         {
+            StopRotation();
+            ApplyRotation(deltaDegrees);
+        }
+
+        private void ApplyRotation(Vector2 deltaDegrees)
+        {
             _yaw = Mathf.Repeat(_yaw + deltaDegrees.x, 360f);
             _pitch = Mathf.Repeat(_pitch + deltaDegrees.y, 360f);
             ApplyPose();
@@ -113,7 +143,7 @@ namespace Screw.Levels
 
         public void ResetOrbit()
         {
-            _gesture.Cancel();
+            CancelPointer();
             _yaw = Mathf.Repeat(_startAngles.x, 360f);
             _pitch = Mathf.Repeat(_startAngles.y, 360f);
             UpdateDistance();
@@ -129,7 +159,7 @@ namespace Screw.Levels
                 if (touchCount != 1)
                 {
                     _suppressTouches = true;
-                    _gesture.Cancel();
+                    CancelPointer();
                     return;
                 }
 
@@ -152,19 +182,19 @@ namespace Screw.Levels
                         UpdatePointer(touch.fingerId, touch.position, true);
                         break;
                     case TouchPhase.Canceled:
-                        _gesture.Cancel();
+                        CancelPointer();
                         break;
                 }
 
                 return;
             }
 
-            if (_usingTouch)
+            if (_usingTouch && _gesture.IsActive)
             {
-                _gesture.Cancel();
-                _usingTouch = false;
+                CancelPointer();
             }
 
+            _usingTouch = false;
             _suppressTouches = false;
             Vector2 mousePosition = Input.mousePosition;
             if (Input.GetMouseButtonDown(0))
@@ -180,14 +210,23 @@ namespace Screw.Levels
             {
                 UpdatePointer(-1, mousePosition, false);
             }
+            else if (_gesture.IsActive)
+            {
+                CancelPointer();
+            }
             else
             {
-                _gesture.Cancel();
+                AdvanceInertia(Time.unscaledDeltaTime);
             }
         }
 
         private void LateUpdate()
         {
+            if (_gesture.IsHolding && !CanPreviewPressedPart())
+            {
+                CancelPointer();
+            }
+
             if (_camera.aspect != _aspect || _camera.fieldOfView != _fieldOfView)
             {
                 UpdateDistance();
@@ -196,14 +235,14 @@ namespace Screw.Levels
 
         private void OnDisable()
         {
-            _gesture.Cancel();
+            CancelPointer();
         }
 
         private void OnApplicationFocus(bool hasFocus)
         {
             if (!hasFocus)
             {
-                _gesture.Cancel();
+                CancelPointer();
             }
         }
 
@@ -211,16 +250,26 @@ namespace Screw.Levels
         {
             if (paused)
             {
-                _gesture.Cancel();
+                CancelPointer();
             }
         }
 
         public void BeginPointer(int pointerId, Vector2 position)
         {
+            CancelPointer();
             _gesture.Begin(pointerId, position, _dragThresholdPixels, IsPointerBlocked(pointerId, position));
+            if (_gesture.IsActive)
+            {
+                _pressedPart = _partAtPointer?.Invoke(position);
+            }
         }
 
         public void UpdatePointer(int pointerId, Vector2 position, bool released)
+        {
+            UpdatePointer(pointerId, position, released, Time.unscaledDeltaTime);
+        }
+
+        private void UpdatePointer(int pointerId, Vector2 position, bool released, float deltaTime)
         {
             if (!_gesture.IsActive)
             {
@@ -229,12 +278,42 @@ namespace Screw.Levels
 
             var blocked = IsPointerBlocked(pointerId, position);
             var delta = _gesture.Move(pointerId, position, blocked);
-            if (delta != Vector2.zero)
+            if (!_gesture.IsActive || (_gesture.IsHolding && !CanPreviewPressedPart()))
             {
-                Drag(delta);
+                CancelPointer();
+                return;
             }
 
-            if (released && _gesture.End(pointerId, position, blocked))
+            if (_gesture.IsHolding)
+            {
+                if (!released)
+                {
+                    Drag(delta * HoldDragScale, deltaTime);
+                }
+            }
+            else if (_gesture.IsDragging && (!released || delta != Vector2.zero))
+            {
+                Drag(delta, deltaTime);
+            }
+            else if (!released && CanPreviewPressedPart() && _gesture.TryHold(deltaTime))
+            {
+                _partPreview.Show(_pressedPart);
+            }
+
+            if (!released)
+            {
+                return;
+            }
+
+            _pendingDrag = Vector2.zero;
+            if (_gesture.IsHolding || _stationaryTime >= ReleasePauseSeconds)
+            {
+                _angularVelocity = Vector2.zero;
+            }
+
+            var tapped = _gesture.End(pointerId, position, blocked);
+            ClearPartPreview();
+            if (tapped)
             {
                 Tapped?.Invoke(position);
             }
@@ -275,10 +354,70 @@ namespace Screw.Levels
             return false;
         }
 
-        private void Drag(Vector2 deltaPixels)
+        private void Drag(Vector2 deltaPixels, float deltaTime)
         {
             var screenSize = Mathf.Max(1, Mathf.Min(_camera.pixelWidth, _camera.pixelHeight));
-            Rotate(new Vector2(-deltaPixels.x, deltaPixels.y) * (_degreesPerScreen / screenSize));
+            var deltaDegrees = new Vector2(-deltaPixels.x, deltaPixels.y) * (_degreesPerScreen / screenSize);
+            _pendingDrag += deltaDegrees;
+            if (deltaTime <= 0f)
+            {
+                return;
+            }
+
+            if (deltaPixels == Vector2.zero)
+            {
+                _stationaryTime += deltaTime;
+            }
+            else
+            {
+                _stationaryTime = 0f;
+                _angularVelocity = Vector2.ClampMagnitude(deltaDegrees / deltaTime, MaxInertiaSpeed);
+            }
+
+            if (_pendingDrag != Vector2.zero)
+            {
+                var step = _pendingDrag * (1f - Mathf.Exp(-DragSmoothingRate * deltaTime));
+                _pendingDrag -= step;
+                ApplyRotation(step);
+            }
+        }
+
+        private void AdvanceInertia(float deltaTime)
+        {
+            if (_angularVelocity.sqrMagnitude < MinInertiaSpeed * MinInertiaSpeed)
+            {
+                _angularVelocity = Vector2.zero;
+                return;
+            }
+
+            var decay = Mathf.Exp(-InertiaDecayRate * deltaTime);
+            ApplyRotation(_angularVelocity * ((1f - decay) / InertiaDecayRate));
+            _angularVelocity *= decay;
+        }
+
+        private void CancelPointer()
+        {
+            _gesture.Cancel();
+            StopRotation();
+            ClearPartPreview();
+        }
+
+        private void StopRotation()
+        {
+            _pendingDrag = Vector2.zero;
+            _angularVelocity = Vector2.zero;
+            _stationaryTime = 0f;
+        }
+
+        private bool CanPreviewPressedPart()
+        {
+            return _pressedPart != null && _pressedPart.gameObject.activeInHierarchy && _pressedPart.IsChildOf(_levelRoot);
+        }
+
+        private void ClearPartPreview()
+        {
+            _partPreview.Clear();
+            _pressedPart = null;
         }
 
         private void UpdateDistance()

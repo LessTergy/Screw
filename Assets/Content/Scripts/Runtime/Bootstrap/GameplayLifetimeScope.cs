@@ -1,4 +1,5 @@
 using System.IO;
+using Screw.Bootstrap;
 using Screw.Gameplay;
 using Screw.Levels;
 using UnityEngine;
@@ -85,6 +86,8 @@ namespace Screw
             builder.RegisterComponent(_turnOperations).As<ITurnOperations>().AsSelf();
             builder.Register<TurnCoordinator>(Lifetime.Scoped);
             builder.RegisterComponent(_gameplaySession);
+            builder.RegisterBuildCallback(resolver => resolver.Resolve<SceneNavigator>()
+                .PrewarmGameplay(_sceneCamera, resolver.Resolve<LevelView>().ModelRoot, destroyCancellationToken));
         }
     }
 }

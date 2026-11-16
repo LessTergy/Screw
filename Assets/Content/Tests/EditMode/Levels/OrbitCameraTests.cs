@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using NUnit.Framework;
 using Screw.Levels;
 using UnityEditor;
@@ -9,6 +10,10 @@ namespace Screw.Tests.Levels
 {
     public sealed class OrbitCameraTests
     {
+        private const int PointerId = 1;
+        private const float FrameTime = 1f / 60f;
+        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+
         private GameObject _level;
         private GameObject _cameraObject;
         private Renderer _renderer;
@@ -140,6 +145,75 @@ namespace Screw.Tests.Levels
             Assert.That(Quaternion.Angle(_camera.transform.rotation, rotation), Is.LessThan(0.01f));
         }
 
+        [Test]
+        public void DragEasesTowardsThePointerAndReleaseAfterAPauseDoesNotCoast()
+        {
+            var end = BeginDrag() + Vector2.right * 40f;
+            SamplePointer(end, false);
+            var targetYaw = -40f * 180f / Mathf.Min(_camera.pixelWidth, _camera.pixelHeight);
+            Assert.That(Mathf.DeltaAngle(0f, _orbit.Yaw), Is.InRange(targetYaw + 0.1f, -0.1f));
+
+            for (var frame = 0; frame < 30; frame++)
+            {
+                SamplePointer(end, false);
+            }
+
+            var settledYaw = _orbit.Yaw;
+            Assert.That(Mathf.DeltaAngle(0f, settledYaw), Is.EqualTo(targetYaw).Within(0.01f));
+            SamplePointer(end, true);
+            AdvanceInertia(1f);
+            Assert.That(_orbit.Yaw, Is.EqualTo(settledYaw));
+        }
+
+        [Test]
+        public void ReleaseContinuesInTheLastDirectionAndDecaysAcrossFrameRates()
+        {
+            var yawAt30Fps = CoastAfterReversingDrag(30);
+            var yawAt120Fps = CoastAfterReversingDrag(120);
+            Assert.That(yawAt30Fps, Is.EqualTo(yawAt120Fps).Within(0.05f));
+        }
+
+        [Test]
+        public void NewTouchStopsInertiaAndTapsExactlyOnceAtTheStoppedPose()
+        {
+            var end = BeginDrag() + Vector2.right * 40f;
+            var taps = 0;
+            _orbit.Tapped += position =>
+            {
+                Assert.That(position, Is.EqualTo(end));
+                taps++;
+            };
+
+            SamplePointer(end, true);
+            var releaseYaw = _orbit.Yaw;
+            AdvanceInertia(FrameTime);
+            var stoppedYaw = _orbit.Yaw;
+            Assert.That(stoppedYaw, Is.Not.EqualTo(releaseYaw));
+            Assert.That(taps, Is.Zero);
+
+            _orbit.BeginPointer(PointerId, end);
+            SamplePointer(end, true);
+            SamplePointer(end, true);
+            AdvanceInertia(1f);
+            Assert.That(taps, Is.EqualTo(1));
+            Assert.That(_orbit.Yaw, Is.EqualTo(stoppedYaw));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ResetStopsAnActiveDragOrInertia(bool released)
+        {
+            var end = BeginDrag() + new Vector2(40f, 20f);
+            SamplePointer(end, released);
+            Assert.That(_orbit.Yaw, Is.Not.Zero);
+
+            _orbit.ResetOrbit();
+            SamplePointer(end, true);
+            AdvanceInertia(1f);
+            Assert.That(_orbit.Yaw, Is.Zero);
+            Assert.That(_orbit.Pitch, Is.EqualTo(345f));
+        }
+
         [TestCase(90f)]
         [TestCase(270f)]
         public void VerticalOrbitPassesThroughPolesWithoutFlippingAbruptly(float pole)
@@ -257,6 +331,49 @@ namespace Screw.Tests.Levels
         {
             Object.DestroyImmediate(_renderer.gameObject);
             Assert.Throws<InvalidOperationException>(() => _orbit.FrameLevel());
+        }
+
+        private Vector2 BeginDrag()
+        {
+            _camera.pixelRect = new Rect(0f, 0f, 400f, 800f);
+            _orbit.FrameLevel();
+            var start = _camera.pixelRect.center;
+            _orbit.BeginPointer(PointerId, start);
+            return start;
+        }
+
+        private float CoastAfterReversingDrag(int framesPerSecond)
+        {
+            var start = BeginDrag();
+            SamplePointer(start + Vector2.right * 40f, false);
+            var end = start + Vector2.right * 32f;
+            SamplePointer(end, false);
+            SamplePointer(end, true);
+            var releaseYaw = _orbit.Yaw;
+            var frameTime = 1f / framesPerSecond;
+            for (var frame = 0; frame < framesPerSecond; frame++)
+            {
+                AdvanceInertia(frameTime);
+            }
+
+            var settledYaw = _orbit.Yaw;
+            var coast = Mathf.DeltaAngle(releaseYaw, settledYaw);
+            Assert.That(coast, Is.GreaterThan(1f));
+            AdvanceInertia(1f);
+            Assert.That(_orbit.Yaw, Is.EqualTo(settledYaw));
+            return coast;
+        }
+
+        private void SamplePointer(Vector2 position, bool released)
+        {
+            typeof(OrbitCamera).GetMethod("UpdatePointer", PrivateInstance)
+                .Invoke(_orbit, new object[] { PointerId, position, released, FrameTime });
+        }
+
+        private void AdvanceInertia(float deltaTime)
+        {
+            typeof(OrbitCamera).GetMethod("AdvanceInertia", PrivateInstance)
+                .Invoke(_orbit, new object[] { deltaTime });
         }
     }
 }

@@ -108,7 +108,7 @@ namespace Screw.Tests.Levels
                 input.BeginPointer(-1, start);
                 input.UpdatePointer(-1, end, false);
                 input.UpdatePointer(-1, end, true);
-                Assert.That(Quaternion.Angle(view.transform.rotation, levelRotation), Is.GreaterThan(1f));
+                Assert.That(view.transform.rotation, Is.Not.EqualTo(levelRotation));
                 Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
                 Assert.That(camera.transform.rotation, Is.EqualTo(cameraRotation));
                 Assert.That(_scope.Ground.position, Is.EqualTo(groundPosition));

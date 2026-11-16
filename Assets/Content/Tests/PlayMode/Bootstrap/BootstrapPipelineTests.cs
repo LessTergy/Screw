@@ -7,6 +7,7 @@ using NUnit.Framework;
 using Screw.Bootstrap;
 using Screw.Levels;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using VContainer;
@@ -25,15 +26,38 @@ namespace Screw.Tests.Bootstrap
         {
             var previousTimeScale = Time.timeScale;
             var gameplayLoads = 0;
+            var warmupRenders = 0;
+            var renderedToScreen = false;
+            var warmupAfterScreenRender = false;
             void CountLoads(Scene scene, LoadSceneMode mode)
             {
                 if (scene.path == GameplayPath)
                 {
                     gameplayLoads++;
+                    renderedToScreen = false;
+                }
+            }
+
+            void CountWarmupRenders(ScriptableRenderContext context, Camera camera)
+            {
+                if (camera.gameObject.scene.path != GameplayPath || camera.cameraType != CameraType.Game)
+                {
+                    return;
+                }
+
+                if (camera.targetTexture == null)
+                {
+                    renderedToScreen = true;
+                }
+                else if (camera.targetTexture.name == "Gameplay Shader Warmup")
+                {
+                    warmupRenders++;
+                    warmupAfterScreenRender |= renderedToScreen;
                 }
             }
 
             SceneManager.sceneLoaded += CountLoads;
+            RenderPipelineManager.beginCameraRendering += CountWarmupRenders;
             try
             {
                 Time.timeScale = 1f;
@@ -49,6 +73,8 @@ namespace Screw.Tests.Bootstrap
                 }
 
                 gameplayLoads = 0;
+                warmupRenders = 0;
+                warmupAfterScreenRender = false;
                 using (LifetimeScope.Enqueue(builder => builder.Register<DisposalTracker>(Lifetime.Scoped)))
                 {
                     yield return SceneManager.LoadSceneAsync(BootstrapPath, LoadSceneMode.Single);
@@ -60,6 +86,9 @@ namespace Screw.Tests.Bootstrap
                     var gameplay = Object.FindFirstObjectByType<GameplayLifetimeScope>();
                     AssertComposition(app, navigator, gameplay);
                     Assert.That(gameplayLoads, Is.EqualTo(1), "Repeated startup requests must load Gameplay once.");
+                    var expectedWarmupRenders = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null ? 0 : 2;
+                    Assert.That(warmupRenders, Is.EqualTo(expectedWarmupRenders));
+                    Assert.That(warmupAfterScreenRender, Is.False);
                     Assert.That(SceneManager.GetSceneByPath(BootstrapPath).isLoaded, Is.False);
                     Assert.That(SceneManager.sceneCount, Is.EqualTo(1));
                     Assert.Throws<VContainerException>(() => app.Container.Resolve<DisposalTracker>());
@@ -77,6 +106,7 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(tracker.IsDisposed, Is.True);
                     Assert.That(restarted.Container.Resolve<DisposalTracker>(), Is.Not.SameAs(tracker));
                     AssertComposition(app, navigator, restarted);
+                    Assert.That(warmupRenders, Is.EqualTo(expectedWarmupRenders));
 
                     var restartedTracker = restarted.Container.Resolve<DisposalTracker>();
                     yield return SceneManager.LoadSceneAsync(GameplayPath, LoadSceneMode.Single);
@@ -91,11 +121,13 @@ namespace Screw.Tests.Bootstrap
                     yield return null;
                     Assert.That(gameplayLoads, Is.EqualTo(loadCount), "Direct Gameplay startup must not trigger another load.");
                     Assert.That(Object.FindFirstObjectByType<GameplayLifetimeScope>(), Is.SameAs(direct));
+                    Assert.That(warmupRenders, Is.EqualTo(expectedWarmupRenders));
                 }
             }
             finally
             {
                 SceneManager.sceneLoaded -= CountLoads;
+                RenderPipelineManager.beginCameraRendering -= CountWarmupRenders;
                 Time.timeScale = previousTimeScale;
             }
         }

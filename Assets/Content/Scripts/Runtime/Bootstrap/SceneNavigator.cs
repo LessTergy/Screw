@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Eflatun.SceneReference;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,6 +13,7 @@ namespace Screw.Bootstrap
         [SerializeField] private SceneReference _gameplayScene;
 
         private bool _loadRequested;
+        private bool _prewarmGameplay;
 
         private void OnEnable()
         {
@@ -26,7 +29,7 @@ namespace Screw.Bootstrap
         {
             if (SceneManager.GetActiveScene().path == _bootstrapScene.Path)
             {
-                LoadGameplay();
+                LoadGameplay(prewarm: true);
             }
         }
 
@@ -35,7 +38,18 @@ namespace Screw.Bootstrap
             return SceneManager.GetActiveScene().path == _gameplayScene.Path && LoadGameplay();
         }
 
-        private bool LoadGameplay()
+        internal void PrewarmGameplay(Camera camera, Transform modelRoot, CancellationToken cancellationToken)
+        {
+            if (!_prewarmGameplay)
+            {
+                return;
+            }
+
+            _prewarmGameplay = false;
+            GameplayShaderWarmup.RunAsync(camera, modelRoot, cancellationToken).Forget(Debug.LogException);
+        }
+
+        private bool LoadGameplay(bool prewarm = false)
         {
             if (_loadRequested)
             {
@@ -43,6 +57,7 @@ namespace Screw.Bootstrap
             }
 
             _loadRequested = true;
+            _prewarmGameplay = prewarm;
             try
             {
                 if (SceneManager.LoadSceneAsync(_gameplayScene.Path, LoadSceneMode.Single) == null)
@@ -55,6 +70,7 @@ namespace Screw.Bootstrap
             catch
             {
                 _loadRequested = false;
+                _prewarmGameplay = false;
                 throw;
             }
         }

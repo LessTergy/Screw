@@ -623,7 +623,7 @@ namespace Screw.Tests.Gameplay
             var partPosition = part.position;
             input.BeginPointer(-1, point);
             input.UpdatePointer(-1, point + new Vector2(40f, 20f), true);
-            Assert.That(Quaternion.Angle(input.LevelRoot.rotation, levelRotation), Is.GreaterThan(1f));
+            Assert.That(input.LevelRoot.rotation, Is.Not.EqualTo(levelRotation));
             Assert.That(camera.transform.position, Is.EqualTo(cameraPosition));
             Assert.That(camera.transform.rotation, Is.EqualTo(cameraRotation));
             Assert.That(part.position, Is.EqualTo(partPosition));

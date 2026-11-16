@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using Screw.Levels;
 using UnityEditor;
@@ -14,6 +15,9 @@ namespace Screw.Tests.Levels
 {
     public sealed class BoltSelectionTests
     {
+        private const int PreviewPointer = 7;
+        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+
         private Scene _scene;
         private GameObject _root;
         private LevelView _view;
@@ -223,6 +227,101 @@ namespace Screw.Tests.Levels
             Assert.That(bolt.Id, Is.EqualTo(42));
         }
 
+        [TestCase("release")]
+        [TestCase("outside")]
+        [TestCase("reset")]
+        [TestCase("detached")]
+        public void HoldPreviewsOnlyTheOriginalPartAndRestoresItWhenTheGestureEnds(string ending)
+        {
+            var modelRoot = new GameObject("Model").transform;
+            modelRoot.SetParent(_root.transform, false);
+            var frontPart = new GameObject("FrontPart").transform;
+            frontPart.SetParent(modelRoot, false);
+            var front = CreateBlocker(Vector3.back);
+            front.transform.SetParent(frontPart, true);
+            var side = CreateBlocker(Vector3.right * 1.5f);
+            side.transform.SetParent(modelRoot, true);
+            var hiddenBolt = CreateBolt(42, Vector3.zero);
+            hiddenBolt.rotation = Quaternion.LookRotation(Vector3.back);
+            using (var view = new SerializedObject(_view))
+            {
+                view.FindProperty("_modelRoot").objectReferenceValue = modelRoot;
+                var parts = view.FindProperty("_parts");
+                parts.arraySize = 2;
+                parts.GetArrayElementAtIndex(0).FindPropertyRelative("_id").intValue = 13;
+                parts.GetArrayElementAtIndex(0).FindPropertyRelative("_node").objectReferenceValue = frontPart;
+                parts.GetArrayElementAtIndex(1).FindPropertyRelative("_id").intValue = 14;
+                parts.GetArrayElementAtIndex(1).FindPropertyRelative("_node").objectReferenceValue = side.transform;
+                view.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var orbit = _camera.GetComponent<OrbitCamera>();
+            using (var camera = new SerializedObject(orbit))
+            {
+                camera.FindProperty("_levelRoot").objectReferenceValue = _root.transform;
+                camera.FindProperty("_startAngles").vector2Value = Vector2.zero;
+                camera.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            orbit.FrameLevel();
+            PrepareSelection();
+            var tapped = 0;
+            orbit.Tapped += _ => tapped++;
+            var frontRenderer = front.GetComponent<MeshRenderer>();
+            var sideRenderer = side.GetComponent<MeshRenderer>();
+            var boltRenderer = hiddenBolt.GetComponent<MeshRenderer>();
+            var frontMaterials = frontRenderer.sharedMaterials;
+            var sideMaterials = sideRenderer.sharedMaterials;
+            var boltMaterials = boltRenderer.sharedMaterials;
+            var start = ScreenPoint(front.bounds.center);
+            var away = ScreenPoint(side.bounds.center);
+            orbit.BeginPointer(PreviewPointer, start);
+            SamplePreviewPointer(orbit, start, false, 0.2f);
+            var preview = Resources.Load<Material>("PartPreview");
+            Assert.That(preview, Is.Not.Null);
+            Assert.That(frontRenderer.sharedMaterial, Is.EqualTo(preview));
+            Assert.That(_selection.TrySelect(ScreenPoint(hiddenBolt.position), out _), Is.False);
+
+            SamplePreviewPointer(orbit, away, false);
+            var previewRotation = Mathf.Abs(Mathf.DeltaAngle(0f, orbit.Yaw));
+            Assert.That(previewRotation, Is.GreaterThan(0.01f));
+            Assert.That(frontRenderer.sharedMaterial, Is.EqualTo(preview));
+            CollectionAssert.AreEqual(sideMaterials, sideRenderer.sharedMaterials);
+            CollectionAssert.AreEqual(boltMaterials, boltRenderer.sharedMaterials);
+
+            switch (ending)
+            {
+                case "release":
+                    SamplePreviewPointer(orbit, away, true);
+                    break;
+                case "outside":
+                    SamplePreviewPointer(orbit, new Vector2(-1f, away.y), false);
+                    break;
+                case "reset":
+                    orbit.ResetOrbit();
+                    break;
+                case "detached":
+                    frontPart.SetParent(null, true);
+                    SamplePreviewPointer(orbit, away, false);
+                    frontPart.SetParent(modelRoot, true);
+                    break;
+            }
+
+            CollectionAssert.AreEqual(frontMaterials, frontRenderer.sharedMaterials);
+            Assert.That(front.enabled, Is.True);
+            SamplePreviewPointer(orbit, away, true);
+            Assert.That(tapped, Is.Zero);
+            var endYaw = orbit.Yaw;
+            typeof(OrbitCamera).GetMethod("AdvanceInertia", PrivateInstance).Invoke(orbit, new object[] { 0.2f });
+            Assert.That(orbit.Yaw, Is.EqualTo(endYaw));
+
+            orbit.ResetOrbit();
+            orbit.BeginPointer(PreviewPointer, start);
+            SamplePreviewPointer(orbit, away, false);
+            var dragRotation = Mathf.Abs(Mathf.DeltaAngle(0f, orbit.Yaw));
+            Assert.That(previewRotation, Is.LessThan(dragRotation * 0.5f));
+        }
+
         [TestCase("missing")]
         [TestCase("trigger")]
         [TestCase("disabled")]
@@ -304,6 +403,12 @@ namespace Screw.Tests.Levels
         private Vector2 ScreenPoint(Vector3 position)
         {
             return _camera.WorldToScreenPoint(position);
+        }
+
+        private static void SamplePreviewPointer(OrbitCamera orbit, Vector2 position, bool released, float deltaTime = 1f / 60f)
+        {
+            typeof(OrbitCamera).GetMethod("UpdatePointer", PrivateInstance)
+                .Invoke(orbit, new object[] { PreviewPointer, position, released, deltaTime });
         }
 
         private void AssertNoSelection(Vector2 point)

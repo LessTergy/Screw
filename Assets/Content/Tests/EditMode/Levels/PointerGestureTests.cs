@@ -71,6 +71,50 @@ namespace Screw.Tests.Levels
         }
 
         [Test]
+        public void HoldStartsOnceAndReportsMovementFromTheLastSampleWithoutTapping()
+        {
+            _gesture.Begin(FingerId, Vector2.zero, Threshold, false);
+            Assert.That(_gesture.TryHold(0.1f), Is.False);
+            var beforeHold = new Vector2(9f, 0f);
+            Assert.That(_gesture.Move(FingerId, beforeHold, false), Is.EqualTo(Vector2.zero));
+            Assert.That(_gesture.TryHold(0.1f), Is.True);
+            Assert.That(_gesture.TryHold(0.1f), Is.False);
+
+            var afterHold = new Vector2(12f, 0f);
+            Assert.That(_gesture.Move(FingerId, afterHold, false), Is.EqualTo(afterHold - beforeHold));
+            Assert.That(_gesture.IsHolding, Is.True);
+            Assert.That(_gesture.IsDragging, Is.False);
+            Assert.That(_gesture.End(FingerId, afterHold, false), Is.False);
+            Assert.That(_gesture.IsHolding, Is.False);
+        }
+
+        [Test]
+        public void DragThresholdWinsIfCrossedBeforeHoldStarts()
+        {
+            _gesture.Begin(FingerId, Vector2.zero, Threshold, false);
+            Assert.That(_gesture.TryHold(0.19f), Is.False);
+            var position = new Vector2(Threshold, 0f);
+            Assert.That(_gesture.Move(FingerId, position, false), Is.EqualTo(position));
+            Assert.That(_gesture.TryHold(0.02f), Is.False);
+            Assert.That(_gesture.IsDragging, Is.True);
+        }
+
+        [Test]
+        public void CancellationClearsHoldAndNewPressCanTap()
+        {
+            _gesture.Begin(FingerId, Vector2.zero, Threshold, false);
+            Assert.That(_gesture.TryHold(0.2f), Is.True);
+            _gesture.Move(FingerId, Vector2.zero, true);
+            Assert.That(_gesture.IsHolding, Is.False);
+            Assert.That(_gesture.TryHold(1f), Is.False);
+            Assert.That(_gesture.End(FingerId, Vector2.zero, false), Is.False);
+
+            _gesture.Begin(FingerId, Vector2.zero, Threshold, false);
+            Assert.That(_gesture.TryHold(0.1f), Is.False);
+            Assert.That(_gesture.End(FingerId, Vector2.zero, false), Is.True);
+        }
+
+        [Test]
         public void CanceledPressCannotTapAndANewPressCanStart()
         {
             _gesture.Begin(FingerId, Vector2.zero, Threshold, false);

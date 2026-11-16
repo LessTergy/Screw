@@ -5,6 +5,7 @@
     "VContainer",
     "Eflatun.SceneReference",
     "UnityEngine.UI",
+    "Unity.RenderPipelines.Universal.Runtime",
     "UniTask",
     "Unity.TextMeshPro"
   ],
