@@ -13,7 +13,7 @@ namespace Screw.Gameplay
         private readonly Dictionary<int, BoltDestination> _reservations;
         private readonly Dictionary<int, AttemptTurn> _activeTurns = new Dictionary<int, AttemptTurn>();
         private readonly int?[][] _containerSlots;
-        private readonly int?[] _poolSlots;
+        private readonly List<int?> _poolSlots;
         private readonly AttemptContainer[] _containers;
         private readonly List<int> _containerQueue;
         private readonly List<int> _poolArrivalOrder = new List<int>();
@@ -30,6 +30,7 @@ namespace Screw.Gameplay
         public IReadOnlyList<int> ContainerQueue { get; }
         public IReadOnlyList<AttemptContainer> Containers { get; }
         public IReadOnlyList<int?> PoolSlots { get; }
+        public bool HasExtraPoolSlot => _poolSlots.Count > LevelDataValidator.PoolCapacity;
         public IReadOnlyList<int> CollectedBoltIds { get; }
         public IReadOnlyList<int> DetachedBoltIds { get; }
         public IReadOnlyDictionary<int, AttemptTurn> ActiveTurns { get; }
@@ -81,8 +82,13 @@ namespace Screw.Gameplay
 
             _containerQueue = new List<int>(definition.ContainerGroups.Skip(2));
             ContainerQueue = _containerQueue.AsReadOnly();
-            _poolSlots = new int?[LevelDataValidator.PoolCapacity];
-            PoolSlots = Array.AsReadOnly(_poolSlots);
+            _poolSlots = new List<int?>(LevelDataValidator.PoolCapacity + 1);
+            for (var index = 0; index < LevelDataValidator.PoolCapacity; index++)
+            {
+                _poolSlots.Add(null);
+            }
+
+            PoolSlots = _poolSlots.AsReadOnly();
             CollectedBoltIds = _collectedBoltIds.AsReadOnly();
             DetachedBoltIds = _detachedBoltIds.AsReadOnly();
         }
@@ -125,7 +131,7 @@ namespace Screw.Gameplay
                 }
             }
 
-            var poolSlot = Array.FindIndex(_poolSlots, id => !id.HasValue);
+            var poolSlot = _poolSlots.IndexOf(null);
             if (poolSlot >= 0)
             {
                 var destination = new BoltDestination(null, poolSlot);
@@ -228,6 +234,11 @@ namespace Screw.Gameplay
             return new LevelAttempt(_definition);
         }
 
+        internal void AddExtraPoolSlot()
+        {
+            _poolSlots.Add(null);
+        }
+
         private bool IsActiveTurn(AttemptTurn turn, TurnPhase phase)
         {
             return Status == AttemptStatus.Active && turn != null
@@ -280,7 +291,7 @@ namespace Screw.Gameplay
                     }
 
                     var boltId = _poolArrivalOrder[arrival];
-                    var poolSlot = Array.IndexOf(_poolSlots, (int?)boltId);
+                    var poolSlot = _poolSlots.IndexOf(boltId);
                     _poolArrivalOrder.RemoveAt(arrival);
                     _poolSlots[poolSlot] = null;
                     _containerSlots[index][slot] = boltId;

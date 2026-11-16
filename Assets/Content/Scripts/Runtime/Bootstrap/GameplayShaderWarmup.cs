@@ -9,7 +9,7 @@ namespace Screw.Bootstrap
 {
     internal static class GameplayShaderWarmup
     {
-        public static async UniTask RunAsync(Camera camera, Transform modelRoot, CancellationToken cancellationToken)
+        public static async UniTask RunAsync(Camera camera, Transform modelRoot, Material partPreviewMaterial, CancellationToken cancellationToken)
         {
             // Let Gameplay initialize the camera and HUD before rendering the warmup passes.
             if (await UniTask.Yield(PlayerLoopTiming.LastPreLateUpdate, cancellationToken).SuppressCancellationThrow()
@@ -41,7 +41,7 @@ namespace Screw.Bootstrap
                 UnityEditor.ShaderUtil.allowAsyncCompilation = false;
 #endif
                 RenderPipeline.SubmitRenderRequest(camera, request);
-                preview.Show(modelRoot);
+                preview.Show(modelRoot, partPreviewMaterial);
                 RenderPipeline.SubmitRenderRequest(camera, request);
             }
             finally

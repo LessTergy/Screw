@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
@@ -35,6 +36,7 @@ namespace Screw.Tests.Gameplay
         private CollectionView _collection;
         private float _previousTimeScale;
         private Hash128 _catalogHash;
+        private IDisposable _testProfileRegistration;
         private readonly Dictionary<Material, string> _materials = new Dictionary<Material, string>();
 
         [UnitySetUp]
@@ -44,6 +46,14 @@ namespace Screw.Tests.Gameplay
             Time.timeScale = 1f;
             _catalogHash = AssetDatabase.GetAssetDependencyHash(LevelContentCatalogUtility.CatalogAssetPath);
             var catalog = AssetDatabase.LoadAssetAtPath<LevelContentCatalog>(LevelContentCatalogUtility.CatalogAssetPath);
+            var testProfile = new CampaignProgress(catalog.Levels.Count);
+            _testProfileRegistration = LifetimeScope.Enqueue(builder =>
+            {
+                if (!builder.Exists(typeof(CampaignProgress)))
+                {
+                    builder.RegisterInstance(testProfile);
+                }
+            });
             _materials.Clear();
             foreach (var material in catalog.Palette.SelectMany(color => new[] { color.Primary, color.Secondary }).Distinct())
             {
@@ -56,12 +66,43 @@ namespace Screw.Tests.Gameplay
         [TearDown]
         public void TearDown()
         {
+            _testProfileRegistration.Dispose();
             Time.timeScale = _previousTimeScale;
             Assert.That(AssetDatabase.GetAssetDependencyHash(LevelContentCatalogUtility.CatalogAssetPath), Is.EqualTo(_catalogHash));
             foreach (var material in _materials)
             {
                 Assert.That(EditorJsonUtility.ToJson(material.Key), Is.EqualTo(material.Value), material.Key.name);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator CollectionViewRebuildsAnEmptyExpandedPoolCache()
+        {
+            var attempt = _scope.GameplaySession.Attempt;
+            var catalog = _scope.LevelView.ContentCatalog;
+            var slotIndex = LevelDataValidator.PoolCapacity;
+            var extra = _collection.PoolSlots[slotIndex - 1].parent.Find("Extra Pool Slot");
+            Assert.That(extra, Is.Not.Null);
+            Assert.That(extra.gameObject.activeSelf, Is.False);
+
+            var expandedSlots = typeof(CollectionView).GetField("_expandedPoolSlots", BindingFlags.Instance | BindingFlags.NonPublic);
+            expandedSlots.SetValue(_collection, Array.Empty<Transform>());
+            yield return null;
+
+            _collection.Initialize(attempt, catalog);
+            Assert.That(_collection.PoolSlots.Count, Is.EqualTo(slotIndex));
+            var profile = _scope.Container.Resolve<CampaignProgress>();
+            profile.RecordVictory(attempt.LevelNumber, AttemptStatus.Won);
+            Assert.That(profile.TryBuyExtraSlot(), Is.True);
+            Assert.That(profile.TryUseExtraSlot(attempt), Is.True);
+            Assert.That(_collection.PoolSlots.Count, Is.EqualTo(slotIndex + 1));
+            Assert.That(_collection.PoolSlots[slotIndex], Is.SameAs(extra));
+            yield return null;
+            Assert.That(extra.gameObject.activeInHierarchy, Is.True);
+
+            _collection.Initialize(attempt.Restart(), catalog);
+            Assert.That(_collection.PoolSlots.Count, Is.EqualTo(slotIndex));
+            Assert.That(extra.gameObject.activeSelf, Is.False);
         }
 
         [UnityTest]
@@ -410,21 +451,52 @@ namespace Screw.Tests.Gameplay
                 Assert.That(_scope.GameplaySession.Attempt.CollectedBoltIds.Count, Is.EqualTo(9));
                 Assert.That(_collection.Containers.All(container => !container.Panel.gameObject.activeSelf), Is.True);
                 AssertResult("Победа!");
+                var profile = _scope.Container.Resolve<CampaignProgress>();
+                Assert.That(RuntimeControl<Text>("Reward Amount").gameObject.activeInHierarchy, Is.EqualTo(pass == 0));
+                var balance = RuntimeControl<Text>("Balance Amount");
+                Assert.That(balance.text, Is.EqualTo("0"));
+                Assert.That(profile.Coins, Is.EqualTo(pass == 0 ? 100 : 0));
                 if (pass == 0)
                 {
-                    var oldScope = _scope;
-                    var oldBolts = view.Bolts.Select(bolt => bolt.Node).ToArray();
-                    Click(SessionReference<Button>("_retryButton"));
-                    yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
-                        "Retry after victory did not reload Gameplay.");
-                    yield return null;
-                    BindScope();
-                    Assert.That(oldBolts.All(bolt => bolt == null), Is.True);
-                    Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
-                    Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
-                    AssertStableVisualState(_scope.GameplaySession.Attempt);
+                    yield return Wait(() => GameObject.Find("Reward Coin") != null, "The first flying coin did not appear.");
+                    var coin = GameObject.Find("Reward Coin").GetComponent<RawImage>();
+                    Assert.That(coin.texture, Is.Not.Null);
+                    Assert.That(coin.rectTransform.rect.width, Is.GreaterThan(0f));
+                    var initialFrame = coin.uvRect;
+                    yield return Wait(() => coin != null && coin.uvRect != initialFrame, "The flying coin did not change sprite frames.");
+
+                    for (var amount = 20; amount <= 100; amount += 20)
+                    {
+                        var expectedBalance = amount.ToString();
+                        yield return Wait(() => balance.text == expectedBalance, "Missing coin arrival for balance " + expectedBalance);
+                    }
+
+                    Assert.That(profile.TryBuyExtraSlot(), Is.True);
                 }
+
+                var oldScope = _scope;
+                var oldBolts = view.Bolts.Select(bolt => bolt.Node).ToArray();
+                Click(SessionReference<Button>("_retryButton"));
+                yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
+                    "Retry after victory did not reload Gameplay.");
+                yield return null;
+                BindScope();
+                Assert.That(oldBolts.All(bolt => bolt == null), Is.True);
+                Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
+                Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
+                AssertStableVisualState(_scope.GameplaySession.Attempt);
             }
+
+            var apply = RuntimeControl<Button>("Apply Extra Slot");
+            Assert.That(apply.interactable, Is.True);
+            Assert.That(RuntimeControl<Text>("Stock Amount").text, Is.EqualTo("1"));
+            Click(apply);
+            yield return null;
+            Assert.That(_collection.PoolSlots.Count, Is.EqualTo(6));
+            Assert.That(_collection.PoolSlots[5].gameObject.activeInHierarchy, Is.True);
+            Assert.That(apply.interactable, Is.False);
+            Assert.That(RuntimeControl<Text>("Stock Amount").text, Is.EqualTo("0"));
+            Assert.That(_scope.Container.Resolve<CampaignProgress>().ExtraSlots, Is.Zero);
         }
 
         [UnityTest]
@@ -736,11 +808,11 @@ namespace Screw.Tests.Gameplay
         }
 
         [UnityTest]
-        public IEnumerator RestartButtonInterceptsPointerWithoutRotatingOrSelectingBehindUI()
+        public IEnumerator PauseInterceptsPointerFreezesTheCurrentTurnAndResumesIt()
         {
             _scope.GameplaySession.enabled = true;
             var input = _scope.SceneCamera.GetComponent<OrbitCamera>();
-            var button = SessionReference<Button>("_restartButton");
+            var button = RuntimeControl<Button>("Pause");
             Vector2 point = RectTransformUtility.WorldToScreenPoint(null, button.transform.position);
             Assert.That(_scope.SceneCamera.pixelRect.Contains(point), Is.True);
             var hits = new List<RaycastResult>();
@@ -758,7 +830,35 @@ namespace Screw.Tests.Gameplay
             Assert.That(tapped, Is.Zero);
             Assert.That(input.LevelRoot.rotation, Is.EqualTo(rotation));
             Assert.That(_scope.GameplaySession.Attempt.ActiveTurns.Values.SingleOrDefault(), Is.Null);
-            yield return null;
+
+            var session = _scope.GameplaySession;
+            var task = session.PlayAsync(0).AsTask();
+            var turn = session.Attempt.ActiveTurns[0];
+            var resume = RuntimeControl<Button>("Resume");
+            var audioWasPaused = AudioListener.pause;
+            try
+            {
+                Click(button);
+                Assert.That(resume.gameObject.activeInHierarchy, Is.True);
+                Assert.That(Time.timeScale, Is.Zero);
+                Assert.That(AudioListener.pause, Is.True);
+                Assert.That(input.enabled, Is.False);
+                yield return new WaitForSecondsRealtime(0.15f);
+                Assert.That(task.IsCompleted, Is.False);
+                Assert.That(turn.Phase, Is.EqualTo(TurnPhase.Reserved));
+            }
+            finally
+            {
+                if (resume.gameObject.activeInHierarchy)
+                {
+                    Click(resume);
+                }
+            }
+
+            Assert.That(Time.timeScale, Is.EqualTo(1f));
+            Assert.That(AudioListener.pause, Is.EqualTo(audioWasPaused));
+            Assert.That(input.enabled, Is.True);
+            yield return Wait(() => turn.Phase != TurnPhase.Reserved, "The turn did not resume.");
         }
 
         [UnityTest]
@@ -813,7 +913,8 @@ namespace Screw.Tests.Gameplay
                     yield return Wait(() => oldParticles.particleCount > 0, "The lid impact did not emit particles.");
                 }
 
-                Time.timeScale = 0f;
+                Time.timeScale = 1f;
+                Click(RuntimeControl<Button>("Pause"));
                 input.Rotate(new Vector2(75f, 45f));
                 _scope.SceneCamera.fieldOfView = 75f;
                 _scope.Ground.position += Vector3.down * 20f;
@@ -822,10 +923,10 @@ namespace Screw.Tests.Gameplay
                 var oldNodes = _scope.LevelView.Parts.Select(part => part.Node)
                     .Concat(_scope.LevelView.Bolts.Select(bolt => bolt.Node)).ToArray();
                 var restart = SessionReference<Button>("_restartButton");
-                Time.timeScale = 1f;
                 Click(restart);
                 Click(restart);
                 Assert.That(session.enabled, Is.False, "Restart must stop receiving selections immediately.");
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
                 yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
                     "Restart did not replace Gameplay in phase " + phase);
                 yield return null;
@@ -841,7 +942,7 @@ namespace Screw.Tests.Gameplay
                 Assert.That(_scope.GameplaySession.Attempt.DetachedBoltIds, Is.Empty);
                 Assert.That(_scope.GameplaySession.Attempt.ContainerQueue, Is.EqualTo(new[] { 0 }));
                 Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.False);
-                Assert.That(SessionReference<Button>("_restartButton").interactable, Is.True);
+                Assert.That(RuntimeControl<Button>("Pause").interactable, Is.True);
                 Assert.That(_scope.SceneCamera.fieldOfView, Is.EqualTo(initialFieldOfView));
                 Assert.That(_scope.SceneCamera.aspect, Is.EqualTo(initialAspect));
                 Assert.That(Vector3.Distance(_scope.SceneCamera.transform.position, initialCameraPosition), Is.LessThan(0.001f));
@@ -881,7 +982,8 @@ namespace Screw.Tests.Gameplay
             {
                 var session = _scope.GameplaySession;
                 session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>(),
-                    _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>());
+                    _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>(), _operations,
+                    _scope.Container.Resolve<ScreenUi>());
                 session.enabled = true;
                 for (var id = 3; id <= 7; id++)
                 {
@@ -932,7 +1034,8 @@ namespace Screw.Tests.Gameplay
                 {
                     var session = _scope.GameplaySession;
                     session.Construct(coordinator, _scope.Container.Resolve<BoltSelection>(), _scope.Container.Resolve<SceneNavigator>(),
-                        _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>());
+                        _scope.Container.Resolve<CampaignProgress>(), _scope.SceneCamera.GetComponent<OrbitCamera>(), _operations,
+                        _scope.Container.Resolve<ScreenUi>());
                     session.enabled = true;
                     foreach (var id in new[] { 9, 6, 10, 7, 8, 0, 1 })
                     {
@@ -982,6 +1085,7 @@ namespace Screw.Tests.Gameplay
 
                     var oldScope = _scope;
                     var oldNodes = view.Bolts.Select(bolt => bolt.Node).Concat(view.Parts.Select(part => part.Node)).ToArray();
+                    Click(RuntimeControl<Button>("Pause"));
                     Click(SessionReference<Button>("_restartButton"));
                     yield return Wait(() => oldScope == null && Object.FindFirstObjectByType<GameplayLifetimeScope>() != null,
                         "Restart did not clear the sorting fixture.");
@@ -1042,7 +1146,7 @@ namespace Screw.Tests.Gameplay
             Assert.That(SessionReference<GameObject>("_resultPanel").activeSelf, Is.True);
             Assert.That(SessionReference<Text>("_resultLabel").text, Is.EqualTo(text));
             Assert.That(SessionReference<Button>("_retryButton").IsInteractable(), Is.True);
-            Assert.That(SessionReference<Button>("_restartButton").gameObject.activeSelf, Is.False);
+            Assert.That(SessionReference<Button>("_restartButton").gameObject.activeInHierarchy, Is.False);
         }
 
         private T SessionReference<T>(string field) where T : Object
@@ -1051,6 +1155,12 @@ namespace Screw.Tests.Gameplay
             {
                 return (T)serialized.FindProperty(field).objectReferenceValue;
             }
+        }
+
+        private static T RuntimeControl<T>(string name) where T : Component
+        {
+            return Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Single(control => control.gameObject.name == name);
         }
 
         private static void Click(Button button)

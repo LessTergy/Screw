@@ -17,6 +17,7 @@ namespace Screw.Levels
         private const float HoldDragScale = 0.2f;
 
         [SerializeField] private Transform _levelRoot;
+        [SerializeField] private Material _partPreviewMaterial;
         [SerializeField] private Vector2 _startAngles = new Vector2(0f, -15f);
         [SerializeField, Min(1f)] private float _framingPadding = 1.15f;
         [SerializeField, Min(0f)] private float _degreesPerScreen = 180f;
@@ -63,6 +64,8 @@ namespace Screw.Levels
         {
             get { return _levelRoot; }
         }
+
+        internal Material PartPreviewMaterial => _partPreviewMaterial;
 
         public Vector3 Pivot
         {
@@ -297,7 +300,7 @@ namespace Screw.Levels
             }
             else if (!released && CanPreviewPressedPart() && _gesture.TryHold(deltaTime))
             {
-                _partPreview.Show(_pressedPart);
+                _partPreview.Show(_pressedPart, _partPreviewMaterial);
             }
 
             if (!released)

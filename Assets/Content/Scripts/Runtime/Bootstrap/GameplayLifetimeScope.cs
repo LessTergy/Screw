@@ -87,7 +87,8 @@ namespace Screw
             builder.Register<TurnCoordinator>(Lifetime.Scoped);
             builder.RegisterComponent(_gameplaySession);
             builder.RegisterBuildCallback(resolver => resolver.Resolve<SceneNavigator>()
-                .PrewarmGameplay(_sceneCamera, resolver.Resolve<LevelView>().ModelRoot, destroyCancellationToken));
+                .PrewarmGameplay(_sceneCamera, resolver.Resolve<LevelView>().ModelRoot,
+                    orbit.PartPreviewMaterial, destroyCancellationToken));
         }
     }
 }

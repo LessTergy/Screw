@@ -25,20 +25,27 @@ namespace Screw.Bootstrap
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
-        public void ToGameplay()
+        internal bool IsBootstrap(Scene scene)
         {
-            if (SceneManager.GetActiveScene().path == _bootstrapScene.Path)
-            {
-                LoadGameplay(prewarm: true);
-            }
+            return scene.path == _bootstrapScene.Path;
+        }
+
+        public bool ToGameplay()
+        {
+            return IsBootstrap(SceneManager.GetActiveScene()) && LoadScene(_gameplayScene, prewarm: true);
         }
 
         public bool RestartGameplay()
         {
-            return SceneManager.GetActiveScene().path == _gameplayScene.Path && LoadGameplay();
+            return SceneManager.GetActiveScene().path == _gameplayScene.Path && LoadScene(_gameplayScene);
         }
 
-        internal void PrewarmGameplay(Camera camera, Transform modelRoot, CancellationToken cancellationToken)
+        public bool ReturnToMenu()
+        {
+            return SceneManager.GetActiveScene().path == _gameplayScene.Path && LoadScene(_bootstrapScene);
+        }
+
+        internal void PrewarmGameplay(Camera camera, Transform modelRoot, Material partPreviewMaterial, CancellationToken cancellationToken)
         {
             if (!_prewarmGameplay)
             {
@@ -46,10 +53,10 @@ namespace Screw.Bootstrap
             }
 
             _prewarmGameplay = false;
-            GameplayShaderWarmup.RunAsync(camera, modelRoot, cancellationToken).Forget(Debug.LogException);
+            GameplayShaderWarmup.RunAsync(camera, modelRoot, partPreviewMaterial, cancellationToken).Forget(Debug.LogException);
         }
 
-        private bool LoadGameplay(bool prewarm = false)
+        private bool LoadScene(SceneReference target, bool prewarm = false)
         {
             if (_loadRequested)
             {
@@ -60,9 +67,9 @@ namespace Screw.Bootstrap
             _prewarmGameplay = prewarm;
             try
             {
-                if (SceneManager.LoadSceneAsync(_gameplayScene.Path, LoadSceneMode.Single) == null)
+                if (SceneManager.LoadSceneAsync(target.Path, LoadSceneMode.Single) == null)
                 {
-                    throw new InvalidOperationException("Unity did not start loading Gameplay.");
+                    throw new InvalidOperationException("Unity did not start loading " + target.Path + ".");
                 }
 
                 return true;
@@ -77,7 +84,7 @@ namespace Screw.Bootstrap
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.path == _gameplayScene.Path)
+            if (IsBootstrap(scene) || scene.path == _gameplayScene.Path)
             {
                 _loadRequested = false;
             }

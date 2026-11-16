@@ -623,6 +623,9 @@ MonoBehaviour:
   _seatClip: {fileID: 8300000, guid: b10f3f8c2b0739644ba7afc58560733f, type: 3}
   _releaseClip: {fileID: 8300000, guid: efaea4c112b64a24c8f7486ab57b42fa, type: 3}
   _closeClip: {fileID: 8300000, guid: 345546d8937e62d4ebaba2c5dd46715d, type: 3}
+  _foregroundShader: {fileID: 4800000, guid: c7527342aa06468eaabf6f22972483e2, type: 3}
+  _boltWithdrawalMaterial: {fileID: 2100000, guid: f0f7d492667a463ea11da25e4b19417b,
+    type: 2}
   _detachDuration: 0.25
   _flightDuration: 0.25
   _seatDuration: 0.2
@@ -1577,6 +1580,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _levelRoot: {fileID: 0}
+  _partPreviewMaterial: {fileID: 2100000, guid: c638d813163f4d7485506a97053b0489,
+    type: 2}
   _startAngles: {x: 180, y: -15}
   _framingPadding: 1.15
   _degreesPerScreen: 180

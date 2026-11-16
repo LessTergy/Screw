@@ -39,6 +39,49 @@ namespace Screw.Tests.Gameplay
             Assert.That(Storage(attempt), Is.EqualTo(before));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void PurchasedExtraSlotAcceptsSixthBoltAndResetsWithAttempt(bool sort)
+        {
+            var campaign = new CampaignProgress(5);
+            campaign.RecordVictory(1, AttemptStatus.Won);
+            Assert.That(campaign.TryBuyExtraSlot(), Is.True);
+            var attempt = AttemptWithFullPool();
+            Assert.That(campaign.TryUseExtraSlot(attempt), Is.True);
+            Assert.That(campaign.TryUseExtraSlot(attempt), Is.False);
+            Assert.That(campaign.ExtraSlots, Is.Zero);
+
+            var sixth = attempt.Bolts.Values.Single(item => item.ColorGroupId == 2 && !attempt.DetachedBoltIds.Contains(item.Id));
+            var result = attempt.ReserveBolt(sixth.Id);
+            Assert.That(result.Destination.Value.SlotIndex, Is.EqualTo(5));
+            Assert.That(attempt.ConfirmDetachment(result.Turn), Is.True);
+            Assert.That(attempt.ConfirmArrival(result.Turn), Is.True);
+            Assert.That(attempt.CompleteTurn(result.Turn), Is.True);
+            Assert.That(attempt.PoolCount, Is.EqualTo(6));
+
+            if (sort)
+            {
+                foreach (var bolt in attempt.Bolts.Values.Where(item => item.ColorGroupId == 0).OrderBy(item => item.Id).Take(3))
+                {
+                    AttemptTestSteps.Play(attempt, bolt.Id);
+                }
+
+                Assert.That(attempt.PoolCount, Is.EqualTo(3));
+                Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Active));
+            }
+            else
+            {
+                var other = attempt.Bolts.Values.First(item => item.ColorGroupId == 3);
+                Assert.That(attempt.ReserveBolt(other.Id).Outcome, Is.EqualTo(BoltReservationOutcome.PoolOverflow));
+                Assert.That(attempt.Status, Is.EqualTo(AttemptStatus.Lost));
+            }
+
+            var restarted = attempt.Restart();
+            Assert.That(restarted.PoolSlots.Count, Is.EqualTo(5));
+            Assert.That(restarted.PoolCount, Is.Zero);
+            Assert.That(campaign.TryUseExtraSlot(restarted), Is.False);
+        }
+
         [TestCase(0)]
         [TestCase(1)]
         public void MatchingBoltIsAcceptedEvenWhenPoolIsFull(int group)

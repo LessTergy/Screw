@@ -27,6 +27,8 @@ namespace Screw.Gameplay
         [SerializeField] private AudioClip _seatClip;
         [SerializeField] private AudioClip _releaseClip;
         [SerializeField] private AudioClip _closeClip;
+        [SerializeField] private Shader _foregroundShader;
+        [SerializeField] private Material _boltWithdrawalMaterial;
         [SerializeField, Min(0.01f)] private float _detachDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _flightDuration = 0.25f;
         [SerializeField, Min(0.01f)] private float _seatDuration = 0.2f;
@@ -38,7 +40,6 @@ namespace Screw.Gameplay
         private LevelAttempt _attempt;
         private LevelContentCatalog _catalog;
         private LevelPartPhysics _partPhysics;
-        private Shader _foregroundShader;
         private ParticleSystem _closeParticles;
         private ParticleSystem _boltParticles;
 
@@ -50,10 +51,14 @@ namespace Screw.Gameplay
         [Inject]
         public void Construct(LevelView view, LevelAttempt attempt, LevelContentCatalog catalog, LevelPartPhysics partPhysics)
         {
-            _foregroundShader = Resources.Load<Shader>("ForegroundBolt");
             if (_foregroundShader == null)
             {
-                throw new InvalidOperationException("Missing foreground bolt shader.");
+                throw new InvalidOperationException("Assign the foreground bolt shader in BoltTurnOperations.");
+            }
+
+            if (_boltWithdrawalMaterial == null)
+            {
+                throw new InvalidOperationException("Assign the bolt withdrawal material in BoltTurnOperations.");
             }
 
             _attempt = attempt;
@@ -77,14 +82,8 @@ namespace Screw.Gameplay
             var boltParticleCapacity = view.Bolts.Count * BoltParticleCount;
             if (_boltParticles == null)
             {
-                var material = Resources.Load<Material>("BoltWithdrawalParticles");
-                if (material == null)
-                {
-                    throw new InvalidOperationException("Missing bolt withdrawal particle material.");
-                }
-
                 _boltParticles = CreateImpactParticles("Bolt Withdrawal Particles", boltParticleCapacity);
-                _boltParticles.GetComponent<ParticleSystemRenderer>().sharedMaterial = material;
+                _boltParticles.GetComponent<ParticleSystemRenderer>().sharedMaterial = _boltWithdrawalMaterial;
             }
 
             _boltParticles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);

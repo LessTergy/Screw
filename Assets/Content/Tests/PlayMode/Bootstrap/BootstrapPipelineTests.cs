@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Screw.Bootstrap;
+using Screw.Gameplay;
 using Screw.Levels;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 using VContainer;
 using VContainer.Unity;
 using Object = UnityEngine.Object;
@@ -22,7 +24,7 @@ namespace Screw.Tests.Bootstrap
         private const string GameplayPath = "Assets/Content/Scenes/Gameplay.unity";
 
         [UnityTest]
-        public IEnumerator AutomaticStartupRestartAndDirectGameplayPreserveRootAndDisposeSceneServices()
+        public IEnumerator MenuRestartAndDirectGameplayPreserveRootAndDisposeSceneServices()
         {
             var previousTimeScale = Time.timeScale;
             var gameplayLoads = 0;
@@ -65,12 +67,7 @@ namespace Screw.Tests.Bootstrap
                 Assert.That(app, Is.Not.Null);
                 var navigator = app.Container.Resolve<SceneNavigator>();
                 var entryPoint = app.Container.Resolve<IReadOnlyList<IStartable>>().OfType<BootstrapEntryPoint>().Single();
-                if (SceneManager.GetActiveScene().path == BootstrapPath)
-                {
-                    entryPoint.Start();
-                    yield return WaitFor(() => SceneManager.GetSceneByPath(GameplayPath).isLoaded);
-                    yield return null;
-                }
+                var campaign = app.Container.Resolve<CampaignProgress>();
 
                 gameplayLoads = 0;
                 warmupRenders = 0;
@@ -79,7 +76,26 @@ namespace Screw.Tests.Bootstrap
                 {
                     yield return SceneManager.LoadSceneAsync(BootstrapPath, LoadSceneMode.Single);
                     entryPoint.Start();
-                    navigator.ToGameplay();
+                    const string card = "Screw Menu/Safe Area/Card/";
+                    yield return WaitFor(() => GameObject.Find(card + "Home/Play") != null);
+                    Assert.That(SceneManager.GetSceneByPath(GameplayPath).isLoaded, Is.False);
+                    GameObject.Find(card + "Home/Shop").GetComponent<Button>().onClick.Invoke();
+                    Assert.That(GameObject.Find(card + "Home/Play"), Is.Null);
+                    Assert.That(GameObject.Find(card + "Shop/Buy").GetComponent<Button>().interactable,
+                        Is.EqualTo(campaign.Coins >= CampaignProgress.ExtraSlotPrice));
+                    GameObject.Find(card + "Shop/Back").GetComponent<Button>().onClick.Invoke();
+                    if (campaign.ResumeLevelNumber == 1)
+                    {
+                        var play = GameObject.Find(card + "Home/Play").GetComponent<Button>();
+                        play.onClick.Invoke();
+                        play.onClick.Invoke();
+                    }
+                    else
+                    {
+                        // Keep the composition and raycast fixture on level one with an existing save.
+                        navigator.ToGameplay();
+                        navigator.ToGameplay();
+                    }
                     yield return WaitFor(() => SceneManager.GetSceneByPath(GameplayPath).isLoaded);
                     yield return null;
 
@@ -122,6 +138,14 @@ namespace Screw.Tests.Bootstrap
                     Assert.That(gameplayLoads, Is.EqualTo(loadCount), "Direct Gameplay startup must not trigger another load.");
                     Assert.That(Object.FindFirstObjectByType<GameplayLifetimeScope>(), Is.SameAs(direct));
                     Assert.That(warmupRenders, Is.EqualTo(expectedWarmupRenders));
+
+                    GameObject.Find("Pause").GetComponent<Button>().onClick.Invoke();
+                    Assert.That(Time.timeScale, Is.Zero);
+                    GameObject.Find("Return to Menu").GetComponent<Button>().onClick.Invoke();
+                    yield return WaitFor(() => GameObject.Find(card + "Home/Play") != null);
+                    Assert.That(SceneManager.GetActiveScene().path, Is.EqualTo(BootstrapPath));
+                    Assert.That(direct == null, Is.True);
+                    Assert.That(Time.timeScale, Is.EqualTo(1f));
                 }
             }
             finally

@@ -6,19 +6,14 @@ namespace Screw.Levels
 {
     internal sealed class PartPreview
     {
-        private static Material _material;
         private readonly List<(MeshRenderer Renderer, Material[] Materials)> _originalMaterials
             = new List<(MeshRenderer Renderer, Material[] Materials)>();
 
-        public void Show(Transform root)
+        public void Show(Transform root, Material material)
         {
-            if (_material == null)
+            if (material == null)
             {
-                _material = Resources.Load<Material>("PartPreview");
-                if (_material == null)
-                {
-                    throw new InvalidOperationException("Missing PartPreview material in Resources.");
-                }
+                throw new InvalidOperationException("Assign the part preview material in OrbitCamera.");
             }
 
             foreach (var renderer in root.GetComponentsInChildren<MeshRenderer>())
@@ -29,7 +24,7 @@ namespace Screw.Levels
                 {
                     if (original[index] != null)
                     {
-                        preview[index] = _material;
+                        preview[index] = material;
                     }
                 }
 

@@ -2,11 +2,55 @@ using System;
 using NUnit.Framework;
 using Screw.Gameplay;
 using Screw.Levels;
+using Screw.Tests.Levels;
+using UnityEngine;
 
 namespace Screw.Tests.Gameplay
 {
     public sealed class CampaignProgressTests
     {
+        [Test]
+        public void FirstVictoryAndPurchasePersistTogetherWithCampaignProgress()
+        {
+            var key = "Screw.Tests.Campaign." + Guid.NewGuid().ToString("N");
+            try
+            {
+                var campaign = CampaignProgress.Load(2, key);
+                Assert.That(campaign.Coins, Is.Zero);
+                Assert.That(campaign.TryBuyExtraSlot(), Is.False);
+                Assert.That(campaign.RecordVictory(1, AttemptStatus.Lost), Is.Zero);
+                Assert.That(campaign.RecordVictory(1, AttemptStatus.Won), Is.EqualTo(100));
+                Assert.That(campaign.RecordVictory(1, AttemptStatus.Won), Is.Zero);
+                Assert.That(campaign.TryBuyExtraSlot(), Is.True);
+                Assert.That(campaign.TryBuyExtraSlot(), Is.False);
+
+                var restored = CampaignProgress.Load(2, key);
+                Assert.That(restored.Coins, Is.Zero);
+                Assert.That(restored.ExtraSlots, Is.EqualTo(1));
+                Assert.That(restored.LevelsCleared, Is.EqualTo(1));
+                Assert.That(restored.RecordVictory(1, AttemptStatus.Won), Is.Zero);
+                var source = LevelTestFixtures.Source();
+                var attempt = new LevelAttempt(source, LevelTestFixtures.Gameplay(source));
+                Assert.That(restored.TryUseExtraSlot(attempt), Is.True);
+                Assert.That(CampaignProgress.Load(2, key).ExtraSlots, Is.Zero);
+                Assert.That(restored.TryContinue(), Is.True);
+                Assert.That(restored.PendingLevelNumber, Is.EqualTo(2));
+                Assert.That(restored.TryContinue(), Is.False);
+                restored.CompleteTransition();
+                Assert.That(restored.RecordVictory(2, AttemptStatus.Won), Is.EqualTo(100));
+                Assert.That(restored.CampaignCleared, Is.True);
+                Assert.That(restored.TryContinue(), Is.True);
+                Assert.That(restored.PendingLevelNumber, Is.EqualTo(2));
+                restored.CompleteTransition();
+                Assert.That(restored.RecordVictory(2, AttemptStatus.Won), Is.Zero);
+            }
+            finally
+            {
+                PlayerPrefs.DeleteKey(key);
+                PlayerPrefs.Save();
+            }
+        }
+
         [TestCase(AttemptStatus.Active)]
         [TestCase(AttemptStatus.Lost)]
         public void AttemptWithoutVictoryCanRetryButCannotAdvance(AttemptStatus status)

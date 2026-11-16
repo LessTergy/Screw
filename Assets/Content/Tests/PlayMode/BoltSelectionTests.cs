@@ -256,9 +256,12 @@ namespace Screw.Tests.Levels
             }
 
             var orbit = _camera.GetComponent<OrbitCamera>();
+            var preview = AssetDatabase.LoadAssetAtPath<Material>("Assets/Content/Materials/Gameplay/PartPreview.mat");
+            Assert.That(preview, Is.Not.Null);
             using (var camera = new SerializedObject(orbit))
             {
                 camera.FindProperty("_levelRoot").objectReferenceValue = _root.transform;
+                camera.FindProperty("_partPreviewMaterial").objectReferenceValue = preview;
                 camera.FindProperty("_startAngles").vector2Value = Vector2.zero;
                 camera.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -277,8 +280,6 @@ namespace Screw.Tests.Levels
             var away = ScreenPoint(side.bounds.center);
             orbit.BeginPointer(PreviewPointer, start);
             SamplePreviewPointer(orbit, start, false, 0.2f);
-            var preview = Resources.Load<Material>("PartPreview");
-            Assert.That(preview, Is.Not.Null);
             Assert.That(frontRenderer.sharedMaterial, Is.EqualTo(preview));
             Assert.That(_selection.TrySelect(ScreenPoint(hiddenBolt.position), out _), Is.False);
 

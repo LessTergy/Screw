@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Screw.Levels;
 using UnityEngine;
@@ -14,10 +15,16 @@ namespace Screw.Gameplay
         [SerializeField] private Transform[] _poolSlots;
         [SerializeField, Min(0.5f)] private float _cameraDepth = 2f;
 
+        private LevelAttempt _attempt;
+        private Transform _extraPoolSlot;
+        [NonSerialized] private Transform[] _expandedPoolSlots;
+
         public Camera Camera
         {
             get { return _camera; }
         }
+
+        internal RectTransform SafeArea => _safeArea;
 
         public IReadOnlyList<CollectionContainer> Containers
         {
@@ -26,27 +33,57 @@ namespace Screw.Gameplay
 
         public IReadOnlyList<Transform> PoolSlots
         {
-            get { return _poolSlots; }
+            get { return _attempt != null && _attempt.HasExtraPoolSlot ? _expandedPoolSlots : _poolSlots; }
         }
 
         public int PoolCount { get; private set; }
 
         public void Initialize(LevelAttempt attempt, LevelContentCatalog catalog)
         {
+            if (_poolSlots.Length != LevelDataValidator.PoolCapacity)
+            {
+                throw new InvalidOperationException($"CollectionView requires {LevelDataValidator.PoolCapacity} pool slots.");
+            }
+
+            var last = _poolSlots[_poolSlots.Length - 1];
+            if (_extraPoolSlot == null)
+            {
+                // Prepare the socket before the last anchor can hold a seated bolt.
+                _extraPoolSlot = Instantiate(last, last.parent, false);
+                _extraPoolSlot.name = "Extra Pool Slot";
+            }
+
+            var previous = _poolSlots[_poolSlots.Length - 2];
+            _extraPoolSlot.localPosition = last.localPosition + (last.localPosition - previous.localPosition);
+            _expandedPoolSlots = new Transform[_poolSlots.Length + 1];
+            _poolSlots.CopyTo(_expandedPoolSlots, 0);
+            _expandedPoolSlots[_poolSlots.Length] = _extraPoolSlot;
+
             for (var index = 0; index < _containers.Length; index++)
             {
                 _containers[index].Panel.localPosition = Vector3.zero;
                 _containers[index].Configure(attempt.Containers[index].ColorGroupId, catalog, attempt.PaletteIndices);
             }
 
+            _attempt = attempt;
             PoolCount = 0;
             RefreshLayout();
         }
 
         public Transform GetSlot(BoltDestination destination)
         {
-            return destination.IsPool ? _poolSlots[destination.SlotIndex]
-                : _containers[destination.ContainerIndex.Value].Slots[destination.SlotIndex];
+            if (!destination.IsPool)
+            {
+                return _containers[destination.ContainerIndex.Value].Slots[destination.SlotIndex];
+            }
+
+            var slot = PoolSlots[destination.SlotIndex];
+            if (!slot.gameObject.activeSelf)
+            {
+                RefreshLayout();
+            }
+
+            return slot;
         }
 
         public void RecordArrival(BoltDestination destination)
@@ -68,7 +105,10 @@ namespace Screw.Gameplay
 
         private void LateUpdate()
         {
-            RefreshLayout();
+            if (_attempt != null)
+            {
+                RefreshLayout();
+            }
         }
 
         private void RefreshLayout()
@@ -92,8 +132,26 @@ namespace Screw.Gameplay
                 node.localScale = Vector3.one * unit;
             }
 
-            _poolRoot.localPosition = new Vector3(centerX, rowY - 0.425f * unit, _cameraDepth);
-            _poolRoot.localScale = Vector3.one * unit;
+            var poolY = rowY - 0.425f * unit;
+            var poolScale = unit;
+            if (_extraPoolSlot != null)
+            {
+                var expanded = _attempt.HasExtraPoolSlot;
+                if (_extraPoolSlot.gameObject.activeSelf != expanded)
+                {
+                    _extraPoolSlot.gameObject.SetActive(expanded);
+                }
+
+                if (expanded)
+                {
+                    poolScale *= (float)_poolSlots.Length / (_poolSlots.Length + 1);
+                    var offset = (_extraPoolSlot.localPosition.x - _poolSlots[_poolSlots.Length - 1].localPosition.x) * 0.5f;
+                    centerX -= offset * poolScale;
+                }
+            }
+
+            _poolRoot.localPosition = new Vector3(centerX, poolY, _cameraDepth);
+            _poolRoot.localScale = Vector3.one * poolScale;
         }
     }
 }
